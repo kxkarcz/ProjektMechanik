@@ -1,0 +1,168 @@
+﻿@model WorkshopManager.DTOs.UsedPartDto
+
+@{
+    ViewData["Title"] = "Dodaj zużytą część";
+}
+
+<h1>Dodaj zużytą część</h1>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4>Dodaj część do użycia</h4>
+                @if (Model.ServiceOrderId != 0)
+                {
+                    <div class="text-muted">
+                        <small><i class="fas fa-link"></i> Przypisywanie do zlecenia #@Model.ServiceOrderId</small>
+                    </div>
+                }
+
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post" id="usedPartForm">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="PartId" class="form-label">Część z magazynu *</label>
+                        <select asp-for="PartId" id="partSelect" class="form-select" required onchange="selectPart()">
+                            <option value="">-- Wybierz część z magazynu --</option>
+                        </select>
+                        <div class="form-text">Wybierz część z dostępnych w magazynie</div>
+                        <span asp-validation-for="PartId" class="text-danger"></span>
+                        <span class="text-danger" id="partError"></span>
+                    </div>
+
+                    <div id="selectedPartInfo" class="mb-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> Wybrana część:</h6>
+                            <div><strong>Nazwa:</strong> <span id="selectedPartName">-</span></div>
+                            <div><strong>Cena jednostkowa:</strong> <span id="selectedPartPrice">0.00 zł</span></div>
+                            <div><strong>Dostępne w magazynie:</strong> <span id="selectedPartStock">0 szt.</span></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Quantity" class="form-label">Ilość *</label>
+                        <div class="input-group">
+                            <input asp-for="Quantity" class="form-control" type="number" min="1" value="1"
+                                   oninput="updateSummary()" id="quantityInput" />
+                            <span class="input-group-text">szt.</span>
+                        </div>
+                        <span asp-validation-for="Quantity" class="text-danger"></span>
+                        <div class="form-text">Wprowadź ilość części do użycia</div>
+                    </div>
+
+                    <input type="hidden" asp-for="ServiceOrderId" />
+
+                    <div class="mb-3">
+                        <div class="alert alert-light border">
+                            <h6><strong>Podsumowanie kosztów:</strong></h6>
+                            <div id="summary">
+                                <div>Część: <span id="summaryPart">Nie wybrano</span></div>
+                                <div>Cena jednostkowa: <span id="summaryUnitPrice">0.00 zł</span></div>
+                                <div>Ilość: <span id="summaryQuantity">1</span></div>
+                                <hr>
+                                <div class="fs-5"><strong>Łączny koszt: <span id="summaryTotal" class="text-success">0.00 zł</span></strong></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success" id="submitBtn" disabled>
+                            <i class="fas fa-save"></i> Zapisz część
+                        </button>
+                        @if (Model.ServiceOrderId != 0)
+                        {
+                            <a asp-controller="ServiceOrder" asp-action="Details" asp-route-id="@Model.ServiceOrderId" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Powrót do zlecenia
+                            </a>
+                        }
+
+                        else
+                        {
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Anuluj
+                            </a>
+                        }
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h4>Części w magazynie</h4>
+            </div>
+            <div class="card-body">
+                <div id="partsContainer">
+                    <div class="text-muted text-center">
+                        <i class="fas fa-spinner fa-spin"></i> Ładowanie części...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5>Instrukcje</h5>
+            </div>
+            <div class="card-body">
+                <div class="small text-muted">
+                    <p><strong>Krok 1:</strong> Wybierz część z listy lub z dropdown.</p>
+                    <p><strong>Krok 2:</strong> Wprowadź ilość do użycia.</p>
+                    <p><strong>Krok 3:</strong> Sprawdź podsumowanie i zapisz.</p>
+                    <hr>
+                    <p><i class="fas fa-info-circle text-info"></i> Część zostanie automatycznie odjęta z magazynu po zapisaniu.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+    <script>
+    </script>
+    <style>
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        .list-group-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        #summary > div {
+            margin-bottom: 0.25rem;
+        }
+
+        .alert-light {
+            background-color: #f8f9fa;
+        }
+
+        .badge {
+            font-size: 0.7em;
+        }
+    </style>
+}
+

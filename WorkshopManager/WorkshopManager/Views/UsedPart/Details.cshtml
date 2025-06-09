@@ -1,0 +1,24 @@
+﻿@model WorkshopManager.Models.UsedPart
+
+@{
+    ViewData["Title"] = "Szczegóły zużytej części";
+}
+
+<h1>Szczegóły zużytej części</h1>
+
+<div>
+    <h4>Zużyta część</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">Ilość</dt>
+        <dd class="col-sm-9">@Model.Quantity</dd>
+
+        <dt class="col-sm-3">Część</dt>
+        <dd class="col-sm-9">@(Model.Part?.Name ?? "Brak danych")</dd>
+    </dl>
+</div>
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edytuj</a>
+    <a asp-action="Index" class="btn btn-secondary">Wróć do listy</a>
+</div>

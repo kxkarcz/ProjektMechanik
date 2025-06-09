@@ -1,0 +1,295 @@
+﻿@model WorkshopManager.Models.Part
+@{
+    ViewData["Title"] = "Szczegóły części";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>@ViewData["Title"]</h1>
+    <div class="btn-group">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Edytuj
+        </a>
+        @if (User.IsInRole("Admin"))
+        {
+            <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                <i class="fas fa-trash"></i> Usuń
+            </a>
+        }
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Powrót do listy
+        </a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Podstawowe informacje -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Informacje o części</h4>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">ID:</dt>
+                    <dd class="col-sm-9">#@Model.Id</dd>
+
+                    <dt class="col-sm-3">Nazwa:</dt>
+                    <dd class="col-sm-9">
+                        <h5 class="text-primary">@Model.Name</h5>
+                    </dd>
+
+                    <dt class="col-sm-3">Cena jednostkowa:</dt>
+                    <dd class="col-sm-9">
+                        <span class="h5 text-success">@Model.UnitPrice.ToString("C")</span>
+                    </dd>
+
+                    <dt class="col-sm-3">Stan magazynowy:</dt>
+                    <dd class="col-sm-9">
+                        <span class="badge @(Model.StockQuantity > 10 ? "bg-success" : Model.StockQuantity > 0 ? "bg-warning" : "bg-danger") fs-6">
+                            @Model.StockQuantity szt.
+                        </span>
+                        @if (Model.StockQuantity <= 5)
+                        {
+                            <small class="text-danger ms-2">
+                                <i class="fas fa-exclamation-triangle"></i> Niski stan magazynowy!
+                            </small>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-3">Wartość magazynowa:</dt>
+                    <dd class="col-sm-9">
+                        <span class="h6 text-info">@((Model.UnitPrice * Model.StockQuantity).ToString("C"))</span>
+                    </dd>
+
+                    @if (!string.IsNullOrEmpty(Model.Description))
+                    {
+                        <dt class="col-sm-3">Opis:</dt>
+                        <dd class="col-sm-9">@Model.Description</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+
+        <!-- Historia użycia -->
+        @if (Model.UsedParts?.Any() == true)
+        {
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>Historia użycia</h4>
+                    <span class="badge bg-info">@Model.UsedParts.Count użyć</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Data użycia</th>
+                                    <th>Zlecenie</th>
+                                    <th>Ilość</th>
+                                    <th>Koszt</th>
+                                    <th>Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var usedPart in Model.UsedParts.OrderByDescending(up => up.Id))
+                                {
+                                    <tr>
+                                        <td>
+                                            <i class="fas fa-calendar text-muted"></i>
+                                            @usedPart.ServiceOrder?.CreatedAt.ToString("dd.MM.yyyy")
+                                        </td>
+                                        <td>
+                                            <a asp-controller="ServiceOrder" asp-action="Details" asp-route-id="@usedPart.ServiceOrderId" class="text-decoration-none">
+                                                <i class="fas fa-file-alt text-primary"></i> Zlecenie #@usedPart.ServiceOrderId
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">@usedPart.Quantity szt.</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-success">@((usedPart.Quantity * Model.UnitPrice).ToString("C"))</span>
+                                        </td>
+                                        <td>
+                                            <a asp-controller="UsedPart" asp-action="Details" asp-route-id="@usedPart.Id"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> Szczegóły
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card mb-4">
+                <div class="card-body text-center py-4">
+                    <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Brak historii użycia</h5>
+                    <p class="text-muted">Ta część nie była jeszcze używana w żadnym zleceniu.</p>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-md-4">
+        <!-- Statystyki części -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Statystyki</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h4 class="text-primary">@(Model.UsedParts?.Sum(up => up.Quantity) ?? 0)</h4>
+                            <small class="text-muted">Sztuk użytych</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-success">@((Model.UsedParts?.Sum(up => up.Quantity * Model.UnitPrice) ?? 0).ToString("C"))</h4>
+                        <small class="text-muted">Łączna wartość użycia</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h4 class="text-info">@(Model.UsedParts?.GroupBy(up => up.ServiceOrderId).Count() ?? 0)</h4>
+                            <small class="text-muted">Różnych zleceń</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-warning">@((Model.UsedParts?.Any() == true) ? Model.UsedParts.Average(up => up.Quantity).ToString("F1") : "0")</h4>
+                        <small class="text-muted">Średnia ilość/użycie</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status magazynowy -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Status magazynowy</h5>
+            </div>
+            <div class="card-body">
+                @{
+                    var stockPercentage = Model.StockQuantity <= 50 ? (Model.StockQuantity * 2) : 100;
+                    var stockColor = Model.StockQuantity > 10 ? "success" : Model.StockQuantity > 0 ? "warning" : "danger";
+                }
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span>Stan magazynowy</span>
+                        <span class="text-@stockColor">@Model.StockQuantity szt.</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-@stockColor" role="progressbar"
+                             style="width: @stockPercentage%"
+                             aria-valuenow="@Model.StockQuantity" aria-valuemin="0" aria-valuemax="50">
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.StockQuantity <= 5)
+                {
+                    <div class="alert alert-warning small mb-0">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Uwaga!</strong> Niski stan magazynowy. Rozważ uzupełnienie zapasów.
+                    </div>
+                }
+                else if (Model.StockQuantity == 0)
+                {
+                    <div class="alert alert-danger small mb-0">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <strong>Brak na stanie!</strong> Część niedostępna w magazynie.
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-success small mb-0">
+                        <i class="fas fa-check-circle"></i>
+                        Część dostępna w magazynie.
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Szybkie akcje -->
+        <div class="card">
+            <div class="card-header">
+                <h5>Szybkie akcje</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary">
+                        <i class="fas fa-edit"></i> Edytuj informacje
+                    </a>
+                    @if (Model.StockQuantity > 0)
+                    {
+                        <button class="btn btn-outline-success" onclick="openStockModal()">
+                            <i class="fas fa-plus"></i> Dodaj do zlecenia
+                        </button>
+                    }
+                    <a asp-controller="UsedPart" asp-action="Index" class="btn btn-outline-info">
+                        <i class="fas fa-history"></i> Historia wszystkich części
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="stockModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Dodaj część do zlecenia</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Aby dodać tę część do zlecenia, przejdź do szczegółów konkretnego zlecenia i użyj opcji "Dodaj część".</p>
+                <p class="text-muted">Obecnie dostępne: <strong>@Model.StockQuantity szt.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <a asp-controller="ServiceOrder" asp-action="Index" class="btn btn-primary">
+                    <i class="fas fa-clipboard-list"></i> Przejdź do zleceń
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openStockModal() {
+        new bootstrap.Modal(document.getElementById('stockModal')).show();
+    }
+
+    setTimeout(() => {
+        $('.alert').alert('close');
+    }, 5000);
+</script>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

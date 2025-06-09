@@ -1,0 +1,60 @@
+﻿@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<IdentityUser> UserManager
+
+<div class="d-flex align-items-center">
+    @if (SignInManager.IsSignedIn(User))
+    {
+        <div class="dropdown">
+            <button class="btn btn-outline-light dropdown-toggle user-info" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-user-circle"></i>
+                @User.Identity?.Name
+                @{
+                    var userRole = User.Claims
+                    .FirstOrDefault(c => c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
+                }
+                @if (!string.IsNullOrEmpty(userRole))
+                {
+                    <span class="badge bg-@(userRole == "Admin" ? "danger" : userRole == "Mechanik" ? "warning" : "info") role-badge">
+                        @userRole
+                    </span>
+                }
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                    <h6 class="dropdown-header">
+                        <i class="fas fa-user"></i> @User.Identity?.Name
+                    </h6>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item" asp-controller="Account" asp-action="Profile">
+                        <i class="fas fa-user-edit"></i> Profil użytkownika
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword">
+                        <i class="fas fa-key"></i> Zmień hasło
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i> Wyloguj się
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-light btn-sm" asp-controller="Account" asp-action="Login">
+                <i class="fas fa-sign-in-alt"></i> Zaloguj się
+            </a>
+        </div>
+    }
+</div>

@@ -1,0 +1,38 @@
+﻿@model WorkshopManager.Models.Vehicle
+
+@{
+    ViewData["Title"] = "Szczegóły pojazdu";
+}
+
+<h1>Szczegóły pojazdu</h1>
+
+<div>
+    <h4>Pojazd</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">Id</dt>
+        <dd class="col-sm-9">@Model.Id</dd>
+
+        <dt class="col-sm-3">VIN</dt>
+        <dd class="col-sm-9">@Model.VIN</dd>
+
+        <dt class="col-sm-3">Numer rejestracyjny</dt>
+        <dd class="col-sm-9">@Model.RegistrationNumber</dd>
+
+        <dt class="col-sm-3">Klient</dt>
+        <dd class="col-sm-9">@(Model.Customer?.FirstName ?? "Brak")</dd>
+
+        @if (!string.IsNullOrEmpty(Model.ImageUrl))
+        {
+            <dt class="col-sm-3">Zdjęcie</dt>
+            <dd class="col-sm-9">
+                <img src="@Model.ImageUrl" alt="Zdjęcie pojazdu" style="max-width: 300px; max-height: 300px;" class="img-thumbnail" />
+            </dd>
+        }
+    </dl>
+</div>
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edytuj</a>
+    <a asp-action="Index" class="btn btn-secondary">Wróć do listy</a>
+</div>

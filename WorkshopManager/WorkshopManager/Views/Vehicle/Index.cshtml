@@ -1,0 +1,37 @@
+﻿@model IEnumerable<WorkshopManager.Models.Vehicle>
+
+@{
+    ViewData["Title"] = "Lista pojazdów";
+}
+
+<h1>Pojazdy</h1>
+
+<p><a asp-action="Create" class="btn btn-primary">Dodaj nowy pojazd</a></p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>VIN</th>
+            <th>Numer rejestracyjny</th>
+            <th>Klient</th>
+            <th>Akcje</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var vehicle in Model)
+        {
+            <tr>
+                <td>@vehicle.Id</td>
+                <td>@vehicle.VIN</td>
+                <td>@vehicle.RegistrationNumber</td>
+                <td>@(vehicle.Customer?.FirstName ?? "Brak")</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@vehicle.Id" class="btn btn-info btn-sm">Szczegóły</a>
+                    <a asp-action="Edit" asp-route-id="@vehicle.Id" class="btn btn-warning btn-sm">Edytuj</a>
+                    <a asp-action="Delete" asp-route-id="@vehicle.Id" class="btn btn-danger btn-sm">Usuń</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

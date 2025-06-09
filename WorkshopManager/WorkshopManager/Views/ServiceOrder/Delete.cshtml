@@ -1,0 +1,70 @@
+﻿@model WorkshopManager.DTOs.ServiceOrderDto
+@{
+    ViewData["Title"] = "Usuń zlecenie";
+}
+
+<div class="container">
+    <h2>@ViewData["Title"] #@Model.Id</h2>
+
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-exclamation-triangle"></i>
+                Potwierdzenie usunięcia
+            </h4>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <strong>Uwaga!</strong> Ta operacja jest nieodwracalna.
+            </div>
+
+            <h5>Szczegóły zlecenia do usunięcia:</h5>
+            <ul class="list-unstyled">
+                <li><strong>ID:</strong> @Model.Id</li>
+                <li><strong>Status:</strong> @Model.StatusDisplayName</li>
+                <li><strong>Data utworzenia:</strong> @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</li>
+                @if (!string.IsNullOrEmpty(Model.VehicleBrand))
+                {
+                    <li><strong>Pojazd:</strong> @Model.VehicleInfo</li>
+                }
+                @if (!string.IsNullOrEmpty(Model.AssignedMechanicName))
+                {
+                    <li><strong>Mechanik:</strong> @Model.AssignedMechanicName</li>
+                }
+                @if (Model.ServiceTaskIds.Any())
+                {
+                    <li><strong>Liczba zadań:</strong> @Model.ServiceTaskIds.Count</li>
+                }
+                @if (Model.CommentIds.Any())
+                {
+                    <li><strong>Liczba komentarzy:</strong> @Model.CommentIds.Count</li>
+                }
+            </ul>
+
+            <p class="text-danger">
+                <strong>Czy na pewno chcesz usunąć to zlecenie?</strong>
+            </p>
+
+            <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Czy na pewno chcesz usunąć to zlecenie?')">
+                    <i class="fas fa-trash"></i> Tak, usuń zlecenie
+                </button>
+
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Anuluj
+                </a>
+
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="fas fa-list"></i> Lista zleceń
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

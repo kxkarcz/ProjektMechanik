@@ -1,0 +1,239 @@
+﻿@model WorkshopManager.ViewModels.Account.AccessDeniedViewModel
+@{
+    ViewData["Title"] = "Brak dostępu";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white text-center">
+                <h2><i class="fas fa-ban"></i> @ViewData["Title"]</h2>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-4">
+                    <i class="fas fa-exclamation-triangle fa-5x text-warning"></i>
+                </div>
+
+                <h4 class="text-danger">Nie masz uprawnień do tej funkcji</h4>
+                <p class="lead">Próbujesz uzyskać dostęp do zasobu, do którego nie masz uprawnień.</p>
+
+                @if (Model != null && !string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-circle"></i> @Model.ErrorMessage
+                    </div>
+                }
+
+                @if (Model != null && (!string.IsNullOrEmpty(Model.UserRole) || !string.IsNullOrEmpty(Model.RequiredRole)))
+                {
+                    <div class="alert alert-warning" role="alert">
+                        <h6><i class="fas fa-user-shield"></i> Szczegóły uprawnień:</h6>
+                        <div class="row">
+                            @if (!string.IsNullOrEmpty(Model.UserRole))
+                            {
+                                <div class="col-md-6">
+                                    <strong>Twoja rola:</strong>
+                                    <span class="badge bg-@(Model.UserRole == "Admin" ? "danger" : Model.UserRole == "Mechanik" ? "warning" : "info") ms-2">
+                                        @Model.UserRole
+                                    </span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.RequiredRole))
+                            {
+                                <div class="col-md-6">
+                                    <strong>Wymagana rola:</strong>
+                                    <span class="badge bg-danger ms-2">@Model.RequiredRole</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <div class="alert alert-info" role="alert">
+                    <h6><i class="fas fa-info-circle"></i> Informacje o rolach w systemie:</h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <div class="card border-danger">
+                                <div class="card-body text-center p-2">
+                                    <span class="badge bg-danger mb-2">
+                                        <i class="fas fa-crown"></i> Admin
+                                    </span><br>
+                                    <small>Pełny dostęp do systemu, zarządzanie użytkownikami, konfiguracja</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <div class="card border-info">
+                                <div class="card-body text-center p-2">
+                                    <span class="badge bg-info mb-2">
+                                        <i class="fas fa-desk"></i> Recepcjonista
+                                    </span><br>
+                                    <small>Zarządzanie klientami, pojazdami, zleceniami, częściami</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <div class="card border-warning">
+                                <div class="card-body text-center p-2">
+                                    <span class="badge bg-warning text-dark mb-2">
+                                        <i class="fas fa-wrench"></i> Mechanik
+                                    </span><br>
+                                    <small>Praca z zleceniami i zadaniami serwisowymi</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <div class="btn-group" role="group">
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-primary">
+                            <i class="fas fa-home"></i> Strona główna
+                        </a>
+
+                        @if (Model != null && !string.IsNullOrEmpty(Model.ReturnUrl))
+                        {
+                            <a href="@Model.ReturnUrl" class="btn btn-outline-primary">
+                                <i class="fas fa-undo"></i> Spróbuj ponownie
+                            </a>
+                        }
+
+                        <a href="javascript:history.back()" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Wróć
+                        </a>
+                    </div>
+                </div>
+
+                @if (Model != null && (!string.IsNullOrEmpty(Model.Controller) || !string.IsNullOrEmpty(Model.Action)))
+                {
+                    <div class="mt-4">
+                        <div class="alert alert-light" role="alert">
+                            <small class="text-muted">
+                                <strong><i class="fas fa-route"></i> Próbowałeś uzyskać dostęp do:</strong><br>
+                                <code>
+                                    @if (!string.IsNullOrEmpty(Model.Controller))
+                                    {
+                                        <span>@Model.Controller</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(Model.Action))
+                                    {
+                                        <span>/@Model.Action</span>
+                                    }
+                                </code>
+                            </small>
+                        </div>
+                    </div>
+                }
+
+                <div class="mt-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6><i class="fas fa-question-circle"></i> Potrzebujesz pomocy?</h6>
+                            <p class="mb-2">
+                                Jeśli uważasz, że powinieneś mieć dostęp do tej funkcji,
+                                skontaktuj się z administratorem systemu.
+                            </p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small class="text-muted">
+                                        <i class="fas fa-envelope"></i> <strong>Email:</strong> admin@workshop.pl
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted">
+                                        <i class="fas fa-phone"></i> <strong>Telefon:</strong> +48 123 456 789
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3" id="countdown-container">
+                    <small class="text-muted">
+                        <i class="fas fa-clock"></i>
+                        Automatyczne przekierowanie na stronę główną za <span id="countdown">60</span> sekund
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var countdown = 60;
+        var countdownElement = document.getElementById('countdown');
+        var countdownContainer = document.getElementById('countdown-container');
+
+        var timer = setInterval(function() {
+            countdown--;
+            if (countdownElement) {
+                countdownElement.textContent = countdown;
+            }
+
+            if (countdown <= 0) {
+                clearInterval(timer);
+                window.location.href = '@Url.Action("Index", "Home")';
+            }
+        }, 1000);
+
+        var interactionDetected = false;
+
+        function cancelRedirect() {
+            if (!interactionDetected) {
+                interactionDetected = true;
+                clearInterval(timer);
+                if (countdownContainer) {
+                    countdownContainer.style.display = 'none';
+                }
+            }
+        }
+
+        document.addEventListener('click', cancelRedirect);
+        document.addEventListener('keydown', cancelRedirect);
+        document.addEventListener('scroll', cancelRedirect);
+        document.addEventListener('mousemove', cancelRedirect);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var roleCards = document.querySelectorAll('.card-body');
+            roleCards.forEach(function(card) {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.05)';
+                    this.style.transition = 'transform 0.2s ease';
+                });
+
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+
+            var style = document.createElement('style');
+            style.innerHTML = `
+                .fa-exclamation-triangle {
+                    animation: pulse 2s infinite;
+                }
+                .btn-group .btn {
+                    transition: all 0.3s ease;
+                }
+                .btn-group .btn:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                }
+                .alert {
+                    animation: slideIn 0.5s ease;
+                }
+                @@keyframes pulse {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.1); }
+                    100% { transform: scale(1); }
+                }
+                @@keyframes slideIn {
+                    from { opacity: 0; transform: translateY(-20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `;
+            document.head.appendChild(style);
+        });
+    </script>
+}

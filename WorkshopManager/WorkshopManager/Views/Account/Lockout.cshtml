@@ -1,0 +1,157 @@
+﻿@model WorkshopManager.ViewModels.Account.LockoutViewModel
+@{
+    ViewData["Title"] = "Konto zablokowane";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark text-center">
+                <h2><i class="fas fa-lock"></i> @ViewData["Title"]</h2>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-4">
+                    <i class="fas fa-user-lock fa-5x text-warning"></i>
+                </div>
+
+                <h4 class="text-warning">Twoje konto zostało tymczasowo zablokowane</h4>
+                <p class="lead">Ze względów bezpieczeństwa dostęp do Twojego konta został ograniczony.</p>
+
+                @if (Model != null && Model.LockoutEnd.HasValue && Model.LockoutEnd > DateTime.UtcNow)
+                {
+                    <div class="alert alert-info" role="alert">
+                        <h6><i class="fas fa-clock"></i> Informacje o blokadzie:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Czas pozostały do odblokowania:</strong></p>
+                                <p class="h5 text-primary" id="lockout-countdown">@Model.GetLockoutTimeRemaining()</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Blokada zostanie zniesiona:</strong></p>
+                                <p class="text-muted">@Model.LockoutEnd.Value.ToString("dd.MM.yyyy HH:mm")</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="alert alert-warning" role="alert">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Najczęstsze przyczyny blokady:</h6>
+                            <ul class="list-unstyled mb-0 text-start">
+                                <li><i class="fas fa-times text-danger me-2"></i> Zbyt wiele nieudanych prób logowania</li>
+                                <li><i class="fas fa-times text-danger me-2"></i> Podejrzana aktywność na koncie</li>
+                                <li><i class="fas fa-times text-danger me-2"></i> Naruszenie zasad bezpieczeństwa</li>
+                                <li><i class="fas fa-times text-danger me-2"></i> Blokada przez administratora</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-info" role="alert">
+                            <h6><i class="fas fa-lightbulb"></i> Wskazówki bezpieczeństwa:</h6>
+                            <ul class="list-unstyled mb-0 text-start small">
+                                <li><i class="fas fa-shield-alt text-primary me-2"></i> Używaj silnych haseł</li>
+                                <li><i class="fas fa-eye-slash text-primary me-2"></i> Nie udostępniaj danych logowania</li>
+                                <li><i class="fas fa-laptop text-primary me-2"></i> Zawsze się wylogowuj</li>
+                                <li><i class="fas fa-exclamation-circle text-primary me-2"></i> Zgłaszaj podejrzaną aktywność</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <div class="btn-group" role="group">
+                        @if (Model?.LockoutEnd == null || Model.LockoutEnd <= DateTime.UtcNow)
+                        {
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-success">
+                                <i class="fas fa-sign-in-alt"></i> Zaloguj się ponownie
+                            </a>
+                        }
+
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-primary">
+                            <i class="fas fa-home"></i> Strona główna
+                        </a>
+
+                        @if (Model != null && !string.IsNullOrEmpty(Model.ReturnUrl))
+                        {
+                            <a href="@Model.ReturnUrl" class="btn btn-outline-secondary">
+                                <i class="fas fa-undo"></i> Powrót
+                            </a>
+                        }
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6><i class="fas fa-question-circle"></i> Potrzebujesz pomocy?</h6>
+                            <p class="mb-0">
+                                Skontaktuj się z administratorem systemu w celu odblokowania konta
+                                lub wyjaśnienia przyczyn blokady.
+                            </p>
+                            <small class="text-muted">
+                                <i class="fas fa-envelope"></i> admin@workshop.pl | 
+                                <i class="fas fa-phone"></i> +48 123 456 789
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @if (Model?.LockoutEnd.HasValue == true && Model.LockoutEnd > DateTime.UtcNow)
+    {
+        <script>
+            // Real-time countdown update
+            var lockoutEndStr = '@Model.LockoutEnd.Value.ToString("yyyy-MM-ddTHH:mm:ss")';
+            var lockoutEnd = new Date(lockoutEndStr);
+            var countdownElement = document.getElementById('lockout-countdown');
+
+            function updateCountdown() {
+                var now = new Date();
+                var remaining = lockoutEnd - now;
+
+                if (remaining <= 0) {
+                    location.reload();
+                    return;
+                }
+
+                var hours = Math.floor(remaining / (1000 * 60 * 60));
+                var minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                var seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+                var timeString = '';
+                if (hours > 0) {
+                    timeString = hours + 'h ' + minutes + 'm ' + seconds + 's';
+                } else if (minutes > 0) {
+                    timeString = minutes + 'm ' + seconds + 's';
+                } else {
+                    timeString = seconds + 's';
+                }
+
+                if (countdownElement) {
+                    countdownElement.textContent = timeString;
+
+                    if (remaining < 60000) {
+                        countdownElement.className = 'h5 text-success';
+                    } else if (remaining < 300000) {
+                        countdownElement.className = 'h5 text-warning';
+                    }
+                }
+            }
+
+            setInterval(updateCountdown, 1000);
+            updateCountdown();
+
+            setInterval(function() {
+                var now = new Date();
+                if (now >= lockoutEnd) {
+                    location.reload();
+                }
+            }, 30000);
+        </script>
+    }
+}

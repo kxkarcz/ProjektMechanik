@@ -1,0 +1,90 @@
+﻿@model WorkshopManager.ViewModels.EditUserViewModel
+@{
+    ViewData["Title"] = "Edytuj użytkownika";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-user-edit"></i> @ViewData["Title"]</h4>
+                <small class="text-muted">Edycja: @Model.Email</small>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label">
+                            <i class="fas fa-envelope"></i> @Html.DisplayNameFor(model => model.Email)
+                        </label>
+                        <input asp-for="Email" class="form-control" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-user-tag"></i> @Html.DisplayNameFor(model => model.CurrentRoles)
+                        </label>
+                        <div class="form-control-plaintext">
+                            @if (Model.CurrentRoles.Any())
+                            {
+                                @foreach (var role in Model.CurrentRoles)
+                                {
+                                    <span class="badge bg-@(role == "Admin" ? "danger" : role == "Mechanik" ? "warning" : "info") me-1">
+                                        @role
+                                    </span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Brak przypisanych ról</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="SelectedRole" class="form-label">
+                            <i class="fas fa-user-tag"></i> @Html.DisplayNameFor(model => model.SelectedRole)
+                        </label>
+                        <select asp-for="SelectedRole" class="form-select">
+                            @foreach (var role in Model.AvailableRoles)
+                            {
+                                <option value="@role" selected="@(Model.CurrentRoles.Contains(role))">@role</option>
+                            }
+                        </select>
+                        <span asp-validation-for="SelectedRole" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input asp-for="IsLocked" class="form-check-input" type="checkbox" />
+                            <label asp-for="IsLocked" class="form-check-label">
+                                <i class="fas fa-ban"></i> @Html.DisplayNameFor(model => model.IsLocked)
+                            </label>
+                        </div>
+                        <div class="form-text">Zablokowanie konta uniemożliwi użytkownikowi logowanie się do systemu.</div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-action="Index" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times"></i> Anuluj
+                        </a>
+                        <a asp-action="ChangePassword" asp-route-id="@Model.Id" class="btn btn-warning me-md-2">
+                            <i class="fas fa-key"></i> Zmień hasło
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Zapisz zmiany
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

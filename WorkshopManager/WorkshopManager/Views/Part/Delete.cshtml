@@ -1,0 +1,44 @@
+﻿@model WorkshopManager.Models.Part
+@{
+    ViewData["Title"] = "Usuń część";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4>Potwierdź usunięcie części</h4>
+            </div>
+            <div class="card-body">
+                <h5>Czy na pewno chcesz usunąć tę część z magazynu?</h5>
+                <dl class="row mt-4">
+                    <dt class="col-sm-4">Nazwa części</dt>
+                    <dd class="col-sm-8">@Model.Name</dd>
+                    <dt class="col-sm-4">Cena jednostkowa</dt>
+                    <dd class="col-sm-8">@Model.UnitPrice zł</dd>
+                    <dt class="col-sm-4">Ilość w magazynie</dt>
+                    <dd class="col-sm-8">@Model.StockQuantity szt.</dd>
+                    @if (!string.IsNullOrWhiteSpace(Model.Description))
+                    {
+                        <dt class="col-sm-4">Opis</dt>
+                        <dd class="col-sm-8">@Model.Description</dd>
+                    }
+                </dl>
+                <form asp-action="Delete" method="post">
+                    @Html.AntiForgeryToken()
+                    @Html.HiddenFor(m => m.Id)
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Usuń
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Anuluj
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

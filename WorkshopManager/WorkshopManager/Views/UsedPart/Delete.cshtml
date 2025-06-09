@@ -1,0 +1,26 @@
+﻿@model WorkshopManager.Models.UsedPart
+
+@{
+    ViewData["Title"] = "Usuń zużytą część";
+}
+
+<h1>Usuń zużytą część</h1>
+
+<h3>Czy na pewno chcesz usunąć tę pozycję?</h3>
+<div>
+    <h4>Zużyta część</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">Ilość</dt>
+        <dd class="col-sm-9">@Model.Quantity</dd>
+
+        <dt class="col-sm-3">Część</dt>
+        <dd class="col-sm-9">@(Model.Part?.Name ?? "Brak danych")</dd>
+    </dl>
+</div>
+
+<form asp-action="Delete">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Usuń</button>
+    <a asp-action="Index" class="btn btn-secondary">Anuluj</a>
+</form>

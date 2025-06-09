@@ -1,0 +1,164 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="jumbotron bg-primary text-white p-4 rounded">
+            <h1 class="display-4">
+                <i class="fas fa-wrench"></i> Witamy w WorkshopManager!
+            </h1>
+            <p class="lead">System zarządzania warsztatem samochodowym</p>
+            <hr class="my-4">
+            <p>
+                Zalogowany jako: <strong>@User.Identity?.Name</strong>
+                @if (!string.IsNullOrEmpty(ViewBag.UserRole))
+                {
+                    <span class="badge bg-light text-dark ms-2">@ViewBag.UserRole</span>
+                }
+            </p>
+        </div>
+    </div>
+</div>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Zlecenia ogółem</h5>
+                        <h2 class="card-text">@ViewBag.TotalOrders</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clipboard-list fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a asp-controller="ServiceOrder" asp-action="Index" class="text-white">
+                    Zobacz wszystkie <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+
+    @if (User.IsInRole("Admin") || User.IsInRole("Recepcjonista"))
+    {
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Klienci</h5>
+                            <h2 class="card-text">@ViewBag.TotalCustomers</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-3x"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a asp-controller="Customer" asp-action="Index" class="text-white">
+                        Zarządzaj klientami <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-secondary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Pojazdy</h5>
+                            <h2 class="card-text">@ViewBag.TotalVehicles</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-car fa-3x"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a asp-controller="Vehicle" asp-action="Index" class="text-white">
+                        Zarządzaj pojazdami <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt"></i> Szybkie akcje</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    @if (User.IsInRole("Mechanik") || User.IsInRole("Recepcjonista"))
+                    {
+                        <div class="col-md-4 mb-3">
+                            <a asp-controller="ServiceOrder" asp-action="Create" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-plus-circle"></i><br>
+                                Nowe zlecenie
+                            </a>
+                        </div>
+                    }
+
+                    @if (User.IsInRole("Admin") || User.IsInRole("Recepcjonista"))
+                    {
+                        <div class="col-md-4 mb-3">
+                            <a asp-controller="Customer" asp-action="Create" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-user-plus"></i><br>
+                                Nowy klient
+                            </a>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <a asp-controller="Vehicle" asp-action="Create" class="btn btn-info btn-lg w-100">
+                                <i class="fas fa-car"></i><br>
+                                Nowy pojazd
+                            </a>
+                        </div>
+                    }
+
+                    <div class="col-md-4 mb-3">
+                        <a asp-controller="Report" asp-action="DownloadOpenOrdersReport" class="btn btn-warning btn-lg w-100">
+                            <i class="fas fa-file-pdf"></i><br>
+                            Raport PDF
+                        </a>
+                    </div>
+
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <div class="col-md-4 mb-3">
+                            <a asp-controller="UserManagement" asp-action="Index" class="btn btn-danger btn-lg w-100">
+                                <i class="fas fa-users-cog"></i><br>
+                                Zarządzanie użytkownikami
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        setTimeout(function() {
+            $('.alert').alert('close');
+        }, 5000);
+    </script>
+}

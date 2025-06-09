@@ -1,0 +1,466 @@
+﻿@using System.Security.Claims
+
+@model WorkshopManager.ViewModels.ServiceOrderDetailsViewModel
+@{
+    ViewData["Title"] = "Szczegóły zlecenia";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>@ViewData["Title"] #@Model.Order.Id</h2>
+                <div class="btn-group" role="group">
+                    <a asp-action="Edit" asp-route-id="@Model.Order.Id" class="btn btn-warning btn-sm">
+                        <i class="fas fa-edit"></i> Edytuj
+                    </a>
+                    <a asp-action="Index" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-arrow-left"></i> Lista
+                    </a>
+                    @if (User.IsInRole("Admin") || User.IsInRole("Recepcjonista"))
+                    {
+                        <a asp-action="Delete" asp-route-id="@Model.Order.Id" class="btn btn-danger btn-sm"
+                           onclick="return confirm('Czy na pewno chcesz usunąć to zlecenie?')">
+                            <i class="fas fa-trash"></i> Usuń
+                        </a>
+                    }
+                </div>
+            </div>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (TempData["WarningMessage"] != null)
+            {
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>@TempData["WarningMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informacje o zleceniu</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-5">Status:</dt>
+                        <dd class="col-7">
+                            <span class="badge fs-6
+                                @(Model.Order.Status == "New" ? "bg-secondary" :
+                                  Model.Order.Status == "Open" ? "bg-primary" :
+                                  Model.Order.Status == "InProgress" ? "bg-warning text-dark" :
+                                  Model.Order.Status == "Completed" ? "bg-success" :
+                                  Model.Order.Status == "Cancelled" ? "bg-danger" : "bg-light")">
+                                @Model.Order.Status
+                            </span>
+                        </dd>
+
+                        <dt class="col-5">ID Pojazdu:</dt>
+                        <dd class="col-7"><strong>@Model.Order.VehicleId</strong></dd>
+
+                        <dt class="col-5">Mechanik:</dt>
+                        <dd class="col-7">
+                            @if (Model.Order.AssignedMechanicId != null)
+                            {
+                                <span class="text-success">
+                                    <i class="fas fa-user-check me-1"></i>ID: @Model.Order.AssignedMechanicId
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">
+                                    <i class="fas fa-user-times me-1"></i>Nieprzypisany
+                                </span>
+                            }
+                        </dd>
+
+                        <dt class="col-5">Zadania:</dt>
+                        <dd class="col-7">
+                            <span class="badge bg-info">@Model.Order.ServiceTaskIds.Count</span>
+                        </dd>
+
+                        <dt class="col-5">Komentarze:</dt>
+                        <dd class="col-7">
+                            <span class="badge bg-secondary">@Model.Comments.Count</span>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Użyte części</h5>
+
+                </div>
+                <div class="card-body p-0">
+                    <div id="usedPartsContainer" class="p-3">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                            <p>Ładowanie części...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-12 mb-4">
+            @if (Model.Order.ServiceTaskIds.Any())
+            {
+                <div class="card h-100">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Zadania (@Model.Order.ServiceTaskIds.Count)</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="tasksContainer" class="p-3">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                <p>Ładowanie zadań...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card h-100">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Zadania</h5>
+                    </div>
+                    <div class="card-body text-center text-muted">
+                        <i class="fas fa-clipboard-list fa-3x mb-3 opacity-50"></i>
+                        <p>Brak zadań w tym zleceniu</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-comments me-2"></i>Komentarze (@Model.Comments.Count)</h5>
+                    <button class="btn btn-light btn-sm" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#addCommentForm" aria-expanded="false" aria-controls="addCommentForm">
+                        <i class="fas fa-plus"></i> Dodaj komentarz
+                    </button>
+                </div>
+
+                <div class="card-body">
+                    <div class="collapse mb-4" id="addCommentForm">
+                        <div class="card border-info">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-pen me-2"></i>Nowy komentarz</h6>
+                            </div>
+                            <div class="card-body">
+                                <form asp-action="AddComment" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="orderId" value="@Model.Order.Id" />
+                                    <input type="hidden" asp-for="NewComment.ServiceOrderId" value="@Model.Order.Id" />
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Autor komentarza</label>
+                                        <input type="text" class="form-control-plaintext bg-light px-3 py-2 rounded"
+                                               value="@User.Identity.Name" readonly />
+                                        <input type="hidden" asp-for="NewComment.Author" value="@User.Identity.Name" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label asp-for="NewComment.Content" class="form-label fw-bold">Treść komentarza</label>
+                                        <textarea asp-for="NewComment.Content" class="form-control" rows="4"
+                                                  placeholder="Wpisz swój komentarz..." required minlength="5" maxlength="1000"></textarea>
+                                        <span asp-validation-for="NewComment.Content" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-paper-plane"></i> Dodaj komentarz
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" data-bs-toggle="collapse"
+                                                data-bs-target="#addCommentForm">
+                                            <i class="fas fa-times"></i> Anuluj
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (Model.Comments.Any())
+                    {
+                        <div class="comments-list">
+                            @foreach (var comment in Model.Comments.OrderByDescending(c => c.Timestamp))
+                            {
+                                <div class="card mb-3 border-start border-info border-3">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <h6 class="card-title mb-1 text-primary">
+                                                    <i class="fas fa-user-circle me-1"></i>@comment.Author
+                                                </h6>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-clock me-1"></i>@comment.Timestamp.ToString("dd.MM.yyyy HH:mm")
+                                                </small>
+                                            </div>
+                                            @if (User.IsInRole("Admin") || User.IsInRole("Recepcjonista"))
+                                            {
+                                                <form asp-action="DeleteComment" method="post" class="d-inline"
+                                                      onsubmit="return confirm('Czy na pewno chcesz usunąć ten komentarz?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="commentId" value="@comment.Id" />
+                                                    <input type="hidden" name="orderId" value="@Model.Order.Id" />
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Usuń komentarz">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                        <div class="card-text bg-light p-3 rounded">
+                                            @Html.Raw(Html.Encode(comment.Content).Replace("\n", "<br/>"))
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-comment-slash fa-4x mb-3 opacity-50"></i>
+                            <h5>Brak komentarzy</h5>
+                            <p>Dodaj pierwszy komentarz używając przycisku powyżej.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+
+    <script>
+        setTimeout(function() {
+            $('.alert').alert('close');
+        }, 5000);
+
+        const textarea = document.querySelector('textarea[name="NewComment.Content"]');
+        if (textarea) {
+            const maxLength = 1000;
+            const counter = document.createElement('div');
+            counter.className = 'form-text text-end';
+            counter.style.fontSize = '0.875em';
+            textarea.parentNode.appendChild(counter);
+
+            function updateCounter() {
+                const remaining = maxLength - textarea.value.length;
+                counter.textContent = `Pozostało znaków: ${remaining}`;
+                counter.className = remaining < 50 ? 'form-text text-end text-warning fw-bold' : 'form-text text-end text-muted';
+            }
+
+            textarea.addEventListener('input', updateCounter);
+            updateCounter();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOrderTasks();
+            loadUsedParts();
+        });
+
+        function loadUsedParts() {
+            fetch('/UsedPart/GetUsedPartsForOrder?orderId=' + @Model.Order.Id)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('usedPartsContainer');
+                    const usedParts = data || [];
+
+                    if (usedParts.length === 0) {
+                        container.innerHTML = `
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-cogs fa-3x mb-3 opacity-50"></i>
+                                <p class="mb-1">Brak użytych części</p>
+                                <small>Dodaj pierwszą część używając przycisku powyżej</small>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    let html = '';
+                    let totalPartsCost = 0;
+
+                    usedParts.forEach((usedPart, index) => {
+                        const partTotalCost = usedPart.quantity * usedPart.part.unitPrice;
+                        totalPartsCost += partTotalCost;
+
+                        html += `
+                            <div class="border-bottom ${index === usedParts.length - 1 ? '' : 'pb-3 mb-3'}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">
+                                            <i class="fas fa-cog text-success me-1"></i>${usedPart.part.name}
+                                        </h6>
+                                        <div class="row text-sm">
+                                            <div class="col-6">
+                                                <small class="text-muted">Ilość: <strong>${usedPart.quantity} szt.</strong></small>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted">Cena: <strong class="text-success">${usedPart.part.unitPrice.toFixed(2)} zł</strong></small>
+                                            </div>
+                                        </div>
+                                        <div class="mt-1">
+                                            <small class="text-muted">Razem: </small>
+                                            <strong class="text-success">${partTotalCost.toFixed(2)} zł</strong>
+                                        </div>
+                                    </div>`;
+
+        @if (User.IsInRole("Admin") || User.IsInRole("Recepcjonista"))
+        {
+            <text>
+                                    html += `
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                                    type="button" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a class="dropdown-item" href="/UsedPart/Edit/${usedPart.id}">
+                                                    <i class="fas fa-edit me-2"></i>Edytuj
+                                                </a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="/UsedPart/Delete/${usedPart.id}"
+                                                       onclick="return confirm('Czy na pewno chcesz usunąć tę część?')">
+                                                    <i class="fas fa-trash me-2"></i>Usuń
+                                                </a></li>
+                                            </ul>
+                                        </div>`;
+            </text>
+        }
+
+                        html += `
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `
+                        <div class="mt-3 pt-3 border-top bg-light rounded p-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong class="text-success">Łączny koszt części:</strong>
+                                <span class="h6 text-success mb-0">${totalPartsCost.toFixed(2)} zł</span>
+                            </div>
+                            <small class="text-muted">Pozycji: ${usedParts.length}</small>
+                        </div>
+                    `;
+
+                    container.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error loading used parts:', error);
+                    document.getElementById('usedPartsContainer').innerHTML = `
+                        <div class="text-center text-danger py-3">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                            <p class="mb-2">Błąd ładowania części</p>
+                            <button class="btn btn-sm btn-outline-primary" onclick="loadUsedParts()">
+                                <i class="fas fa-redo"></i> Spróbuj ponownie
+                            </button>
+                        </div>
+                    `;
+                });
+        }
+
+        @if (Model.Order.ServiceTaskIds.Any())
+        {
+            <text>
+                    function loadOrderTasks() {
+                        fetch('/ServiceTask/GetTasksForEdit?orderId=' + @Model.Order.Id)
+                            .then(response => response.json())
+                            .then(data => {
+                                const container = document.getElementById('tasksContainer');
+                                const currentTasks = data.currentTasks || [];
+
+                                if (currentTasks.length === 0) {
+                                    container.innerHTML = `
+                                        <div class="text-center text-muted py-3">
+                                            <i class="fas fa-tasks fa-3x mb-3 opacity-50"></i>
+                                            <p>Brak zadań w zleceniu</p>
+                                        </div>
+                                    `;
+                                    return;
+                                }
+
+                                let html = '';
+                                let totalCost = 0;
+
+                                currentTasks.forEach((task, index) => {
+                                    const cost = parseFloat(task.laborCost);
+                                    totalCost += cost;
+
+                                    html += `
+                                        <div class="border-bottom ${index === currentTasks.length - 1 ? '' : 'pb-3 mb-3'}">
+                                            <h6 class="mb-1">
+                                                <i class="fas fa-wrench text-warning me-1"></i>${task.description}
+                                            </h6>
+                                            <div class="text-muted">
+                                                <small>Koszt robocizny: </small>
+                                                <strong class="text-success">${task.laborCost} zł</strong>
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+
+                                html += `
+                                    <div class="mt-3 pt-3 border-top bg-light rounded p-2">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <strong class="text-warning">Łączny koszt robocizny:</strong>
+                                            <span class="h6 text-success mb-0">${totalCost.toFixed(2)} zł</span>
+                                        </div>
+                                    </div>
+                                `;
+
+                                container.innerHTML = html;
+                            })
+                            .catch(error => {
+                                console.error('Error loading tasks:', error);
+                                document.getElementById('tasksContainer').innerHTML = `
+                                    <div class="text-center text-danger py-3">
+                                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                                        <p class="mb-2">Błąd ładowania zadań</p>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="loadOrderTasks()">
+                                            <i class="fas fa-redo"></i> Spróbuj ponownie
+                                        </button>
+                                    </div>
+                                `;
+                            });
+                    }
+            </text>
+        }
+        else
+        {
+            <text>
+                    function loadOrderTasks() {
+                    }
+            </text>
+        }
+    </script>
+}

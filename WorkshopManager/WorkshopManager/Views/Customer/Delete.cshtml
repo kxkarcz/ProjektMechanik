@@ -1,0 +1,26 @@
+﻿@model WorkshopManager.Models.Customer
+
+@{
+    ViewData["Title"] = "Usuń klienta";
+}
+
+<h2>Usuń klienta</h2>
+
+<h3>Czy na pewno chcesz usunąć tego klienta?</h3>
+<div>
+    <h4>@Model.FirstName @Model.LastName</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">Email</dt>
+        <dd class="col-sm-10">@Model.Email</dd>
+
+        <dt class="col-sm-2">Telefon</dt>
+        <dd class="col-sm-10">@Model.PhoneNumber</dd>
+    </dl>
+
+    <form asp-action="DeleteConfirmed" method="post">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button type="submit" class="btn btn-danger">Usuń</button>
+        <a asp-action="Index" class="btn btn-secondary">Anuluj</a>
+    </form>
+</div>

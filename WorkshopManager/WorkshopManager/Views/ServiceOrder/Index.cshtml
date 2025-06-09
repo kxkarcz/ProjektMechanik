@@ -1,0 +1,24 @@
+﻿@model IEnumerable<WorkshopManager.DTOs.ServiceOrderDto>
+@{
+    ViewData["Title"] = "Lista zleceń";
+}
+<h2>Lista zleceń serwisowych</h2>
+<p><a asp-action="Create" class="btn btn-primary">Dodaj zlecenie</a></p>
+<table class="table table-striped">
+    <thead><tr><th>Id</th><th>Status</th><th>VehicleId</th><th></th></tr></thead>
+    <tbody>
+        @foreach (var o in Model)
+        {
+            <tr>
+                <td>@o.Id</td>
+                <td>@o.Status</td>
+                <td>@o.VehicleId</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@o.Id">Szczegóły</a> |
+                    <a asp-action="Edit" asp-route-id="@o.Id">Edytuj</a> |
+                    <a asp-action="Delete" asp-route-id="@o.Id">Usuń</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

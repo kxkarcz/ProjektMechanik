@@ -1,0 +1,274 @@
+﻿@model IEnumerable<WorkshopManager.Models.Part>
+@{
+    ViewData["Title"] = "Magazyn części";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>@ViewData["Title"]</h1>
+    <a asp-action="Create" class="btn btn-success">
+        <i class="fas fa-plus"></i> Dodaj nową część
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Statystyki magazynu -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>@Model.Count()</h4>
+                        <p class="mb-0">Rodzajów części</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-warehouse fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>@Model.Sum(p => p.StockQuantity)</h4>
+                        <p class="mb-0">Sztuk w magazynie</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-boxes fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>@Model.Count(p => p.StockQuantity <= 10)</h4>
+                        <p class="mb-0">Niski stan</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>@Model.Sum(p => p.UnitPrice * p.StockQuantity).ToString("C")</h4>
+                        <p class="mb-0">Wartość magazynu</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-money-bill-wave fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtry i wyszukiwanie -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Szukaj części po nazwie...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select id="stockFilter" class="form-select">
+                    <option value="">Wszystkie części</option>
+                    <option value="available">Dostępne (>0)</option>
+                    <option value="low">Niski stan (≤10)</option>
+                    <option value="out">Brak na stanie (0)</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="sortBy" class="form-select">
+                    <option value="name">Sortuj po nazwie</option>
+                    <option value="price">Sortuj po cenie</option>
+                    <option value="stock">Sortuj po stanie</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista części -->
+@if (!Model.Any())
+{
+    <div class="text-center py-5">
+        <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+        <h3 class="text-muted">Brak części w magazynie</h3>
+        <p class="text-muted">Dodaj pierwszą część do magazynu, aby rozpocząć zarządzanie częściami.</p>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Dodaj pierwszą część
+        </a>
+    </div>
+}
+else
+{
+    <div class="row" id="partsContainer">
+        @foreach (var part in Model)
+        {
+            <div class="col-lg-4 col-md-6 mb-4 part-card"
+                 data-name="@part.Name.ToLower()"
+                 data-price="@part.UnitPrice"
+                 data-stock="@part.StockQuantity">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">@part.Name</h5>
+                        <span class="badge @(part.StockQuantity > 10 ? "bg-success" : part.StockQuantity > 0 ? "bg-warning" : "bg-danger")">
+                            @part.StockQuantity szt.
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            <strong>Cena:</strong> <span class="text-success">@part.UnitPrice.ToString("C")</span>
+                        </p>
+                        @if (!string.IsNullOrEmpty(part.Description))
+                        {
+                            <p class="card-text text-muted small">@part.Description</p>
+                        }
+                        <p class="card-text">
+                            <strong>Wartość:</strong> @((part.UnitPrice * part.StockQuantity).ToString("C"))
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group w-100" role="group">
+                            <a asp-action="Details" asp-route-id="@part.Id" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye"></i> Szczegóły
+                            </a>
+                            <a asp-action="Edit" asp-route-id="@part.Id" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-edit"></i> Edytuj
+                            </a>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <a asp-action="Delete" asp-route-id="@part.Id" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-trash"></i> Usuń
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const stockFilter = document.getElementById('stockFilter');
+        const sortBy = document.getElementById('sortBy');
+        const partsContainer = document.getElementById('partsContainer');
+
+        function filterAndSortParts() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const stockFilterValue = stockFilter.value;
+            const sortValue = sortBy.value;
+
+            const partCards = Array.from(document.querySelectorAll('.part-card'));
+
+            partCards.forEach(card => {
+                const name = card.dataset.name;
+                const stock = parseInt(card.dataset.stock);
+                let showCard = true;
+
+                if (searchTerm && !name.includes(searchTerm)) {
+                    showCard = false;
+                }
+
+                if (stockFilterValue) {
+                    switch (stockFilterValue) {
+                        case 'available':
+                            if (stock <= 0) showCard = false;
+                            break;
+                        case 'low':
+                            if (stock > 10) showCard = false;
+                            break;
+                        case 'out':
+                            if (stock !== 0) showCard = false;
+                            break;
+                    }
+                }
+
+                card.style.display = showCard ? 'block' : 'none';
+            });
+
+            const visibleCards = partCards.filter(card => card.style.display !== 'none');
+            visibleCards.sort((a, b) => {
+                switch (sortValue) {
+                    case 'name':
+                        return a.dataset.name.localeCompare(b.dataset.name);
+                    case 'price':
+                        return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
+                    case 'stock':
+                        return parseInt(b.dataset.stock) - parseInt(a.dataset.stock);
+                    default:
+                        return 0;
+                }
+            });
+
+            visibleCards.forEach(card => {
+                partsContainer.appendChild(card);
+            });
+        }
+
+        searchInput.addEventListener('input', filterAndSortParts);
+        stockFilter.addEventListener('change', filterAndSortParts);
+        sortBy.addEventListener('change', filterAndSortParts);
+        setTimeout(() => {
+            $('.alert').alert('close');
+        }, 5000);
+    });
+</script>
+
+<style>
+    .part-card {
+        transition: all 0.3s ease;
+    }
+
+        .part-card:hover {
+            transform: translateY(-2px);
+        }
+
+    .card-footer .btn-group .btn {
+        border-radius: 0;
+    }
+
+        .card-footer .btn-group .btn:first-child {
+            border-top-left-radius: 0.375rem;
+            border-bottom-left-radius: 0.375rem;
+        }
+
+        .card-footer .btn-group .btn:last-child {
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+        }
+</style>

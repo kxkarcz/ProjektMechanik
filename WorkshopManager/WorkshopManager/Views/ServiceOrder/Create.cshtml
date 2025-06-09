@@ -1,0 +1,543 @@
+﻿@model WorkshopManager.DTOs.ServiceOrderCreateDto
+@{
+    ViewData["Title"] = "Nowe zlecenie";
+}
+
+<h2>Nowe zlecenie serwisowe</h2>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row">
+    <!-- Lewa kolumna - formularz podstawowych informacji -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Podstawowe informacje</h4>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post" id="orderForm">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="VehicleId" class="form-label">Pojazd *</label>
+                        <select asp-for="VehicleId" class="form-select" asp-items="ViewBag.Vehicles" required>
+                            <option value="">-- Wybierz pojazd --</option>
+                        </select>
+                        <span asp-validation-for="VehicleId" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Status" class="form-label">Status</label>
+                        <select asp-for="Status" class="form-select">
+                            <option value="New" selected>Nowe</option>
+                            <option value="Open">Otwarte</option>
+                            <option value="InProgress">W trakcie</option>
+                            <option value="Completed">Zakończone</option>
+                            <option value="Cancelled">Anulowane</option>
+                        </select>
+                        <span asp-validation-for="Status" class="text-danger"></span>
+                    </div>
+
+                    @if (ViewBag.CanAssignMechanic == true)
+                    {
+                        <div class="mb-3">
+                            <label asp-for="AssignedMechanicId" class="form-label">Mechanik</label>
+                            <select asp-for="AssignedMechanicId" class="form-select" asp-items="ViewBag.Mechanics">
+                                <option value="">-- Nieprzypisany --</option>
+                            </select>
+                            <span asp-validation-for="AssignedMechanicId" class="text-danger"></span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Mechanik</label>
+                            <input type="text" class="form-control" value="@ViewBag.CurrentMechanicName" readonly />
+                        </div>
+                    }
+
+                    <!-- Ukryte pola dla danych -->
+                    <input type="hidden" name="taskIdsCsv" id="taskIdsCsv" />
+                    <input type="hidden" name="newTasksJson" id="newTasksJson" />
+                    <input type="hidden" name="partsJson" id="partsJson" />
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Zapisz zlecenie
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Anuluj
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prawa kolumna - zadania i części -->
+    <div class="col-md-6">
+        <!-- Sekcja zadań -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Zadania serwisowe</h4>
+                <button class="btn btn-primary btn-sm" onclick="toggleAddTaskForm()">
+                    <i class="fas fa-plus"></i> Dodaj zadanie
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="addTaskForm" style="display: none;" class="mb-3 p-3 border rounded bg-light">
+                    <h6>Nowe zadanie</h6>
+                    <div class="mb-2">
+                        <label class="form-label">Opis zadania *</label>
+                        <input type="text" id="newTaskDescription" class="form-control form-control-sm" placeholder="np. Wymiana oleju" required />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Koszt robocizny *</label>
+                        <div class="input-group input-group-sm">
+                            <input type="number" id="newTaskCost" class="form-control" step="0.01" min="0" placeholder="0.00" required />
+                            <span class="input-group-text">zł</span>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-success btn-sm" onclick="addNewTask()">
+                            <i class="fas fa-plus"></i> Dodaj
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleAddTaskForm()">
+                            Anuluj
+                        </button>
+                    </div>
+                </div>
+
+                <div id="tasksContainer">
+                    <div class="text-muted text-center">
+                        <i class="fas fa-tasks fa-2x mb-2"></i>
+                        <p>Ładowanie zadań...</p>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <h6>Wybrane zadania: <span id="selectedCount">0</span></h6>
+                    <div id="selectedTasks" class="small text-muted">
+                        Brak wybranych zadań
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sekcja części -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Części</h4>
+                <button class="btn btn-primary btn-sm" onclick="toggleAddPartForm()">
+                    <i class="fas fa-plus"></i> Dodaj część
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="addPartForm" style="display: none;" class="mb-3 p-3 border rounded bg-light">
+                    <h6>Nowa część</h6>
+                    <div class="mb-2">
+                        <label class="form-label">Część *</label>
+                        <select id="partSelection" class="form-select form-select-sm" required>
+                            <option value="">-- Wybierz część --</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Ilość *</label>
+                        <input type="number" id="partQuantity" class="form-control form-control-sm" min="1" value="1" required />
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-success btn-sm" onclick="addPartToOrder()">
+                            <i class="fas fa-plus"></i> Dodaj
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleAddPartForm()">
+                            Anuluj
+                        </button>
+                    </div>
+                </div>
+
+                <div id="partsContainer">
+                    <div class="text-muted text-center">
+                        <i class="fas fa-cogs fa-2x mb-2"></i>
+                        <p>Ładowanie części...</p>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <h6>Wybrane części: <span id="selectedPartsCount">0</span></h6>
+                    <div id="selectedParts" class="small text-muted">
+                        Brak wybranych części
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .list-group-item.list-group-item-primary {
+            background-color: #cce7ff;
+            border-color: #99d1ff;
+        }
+
+        .form-check-input:checked {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        #addTaskForm, #addPartForm {
+            border: 2px dashed #dee2e6;
+            transition: all 0.3s ease;
+        }
+
+            #addTaskForm:hover, #addPartForm:hover {
+                border-color: #0d6efd;
+                background-color: #f8f9fa !important;
+            }
+
+        .part-item {
+            transition: all 0.2s ease;
+        }
+
+            .part-item:hover {
+                background-color: #f8f9fa;
+            }
+
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+
+            .card:hover {
+                box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            }
+    </style>
+}
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+
+    <script>
+        // Zarządzanie zadaniami
+        let availableTasks = [];
+        let selectedTaskIds = [];
+        let taskIdCounter = 10000;
+
+        // Zarządzanie częściami
+        let availableParts = [];
+        let selectedParts = [];
+
+        // Ładowanie danych przy starcie
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAvailableTasks();
+            loadAvailableParts();
+        });
+
+        // Funkcje dla zadań
+        function loadAvailableTasks() {
+            fetch('/ServiceTask/GetAvailableTasks')
+                .then(response => response.json())
+                .then(data => {
+                    availableTasks = data.filter(task => !task.serviceOrderId);
+                    renderTasksList();
+                })
+                .catch(error => {
+                    console.error('Error loading tasks:', error);
+                    showError('tasksContainer', 'Nie można załadować zadań');
+                });
+        }
+
+        function renderTasksList() {
+            const container = document.getElementById('tasksContainer');
+
+            if (availableTasks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-info-circle fa-2x mb-2"></i>
+                        <p>Brak dostępnych zadań</p>
+                    </div>`;
+                return;
+            }
+
+            let html = '<div class="list-group list-group-flush">';
+            availableTasks.forEach(task => {
+                const isSelected = selectedTaskIds.includes(task.id);
+                html += `
+                    <div class="list-group-item p-2 ${isSelected ? 'list-group-item-primary' : ''}">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox"
+                                   id="task-${task.id}"
+                                   ${isSelected ? 'checked' : ''}
+                                   onchange="toggleTaskSelection(${task.id})">
+                            <label class="form-check-label w-100" for="task-${task.id}">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>${task.description}</strong>
+                                        <div class="small text-muted">${task.laborCost} zł</div>
+                                    </div>
+                                    <span class="badge bg-success">Dostępne</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function toggleTaskSelection(taskId) {
+            const index = selectedTaskIds.indexOf(taskId);
+            if (index > -1) {
+                selectedTaskIds.splice(index, 1);
+            } else {
+                selectedTaskIds.push(taskId);
+            }
+            updateSelectedTasks();
+            renderTasksList();
+        }
+
+        function updateSelectedTasks() {
+            document.getElementById('selectedCount').textContent = selectedTaskIds.length;
+            document.getElementById('taskIdsCsv').value = selectedTaskIds.join(',');
+
+            const selectedContainer = document.getElementById('selectedTasks');
+            if (selectedTaskIds.length === 0) {
+                selectedContainer.innerHTML = 'Brak wybranych zadań';
+                selectedContainer.className = 'small text-muted';
+            } else {
+                const tasks = availableTasks.filter(t => selectedTaskIds.includes(t.id));
+                selectedContainer.innerHTML = tasks.map(t => `• ${t.description} (${t.laborCost} zł)`).join('<br>');
+                selectedContainer.className = 'small text-success';
+            }
+        }
+
+        function toggleAddTaskForm() {
+            const form = document.getElementById('addTaskForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            if (form.style.display !== 'none') {
+                document.getElementById('newTaskDescription').focus();
+            }
+        }
+
+        function addNewTask() {
+            const description = document.getElementById('newTaskDescription').value.trim();
+            const cost = parseFloat(document.getElementById('newTaskCost').value);
+
+            if (!description || description.length < 3) {
+                alert('Opis zadania musi mieć co najmniej 3 znaki');
+                return;
+            }
+
+            if (isNaN(cost) || cost <= 0) {
+                alert('Podaj prawidłowy koszt robocizny');
+                return;
+            }
+
+            const newTask = {
+                id: taskIdCounter++,
+                description: description,
+                laborCost: cost,
+                isNew: true
+            };
+
+            availableTasks.unshift(newTask);
+            selectedTaskIds.push(newTask.id);
+
+            if (!window.newTasks) window.newTasks = [];
+            window.newTasks.push({
+                Description: description,
+                LaborCost: cost,
+                ServiceOrderId: 0
+            });
+
+            document.getElementById('newTaskDescription').value = '';
+            document.getElementById('newTaskCost').value = '';
+            toggleAddTaskForm();
+
+            updateSelectedTasks();
+            renderTasksList();
+            showToast('Nowe zadanie zostało dodane', 'success');
+        }
+
+        // Funkcje dla części
+        function loadAvailableParts() {
+            fetch('/Part/GetAvailableParts')
+                .then(response => response.json())
+                .then(data => {
+                    availableParts = data;
+                    renderPartsSelect();
+                })
+                .catch(error => {
+                    console.error('Error loading parts:', error);
+                    showError('partsContainer', 'Nie można załadować części');
+                });
+        }
+
+        function renderPartsSelect() {
+            const select = document.getElementById('partSelection');
+            select.innerHTML = '<option value="">-- Wybierz część --</option>';
+
+            availableParts.forEach(part => {
+                const option = document.createElement('option');
+                option.value = part.id;
+                option.textContent = `${part.name} (${part.stockQuantity} szt. - ${part.unitPrice} zł)`;
+                option.dataset.stock = part.stockQuantity;
+                select.add(option);
+            });
+        }
+
+        function toggleAddPartForm() {
+            const form = document.getElementById('addPartForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            if (form.style.display !== 'none') {
+                document.getElementById('partQuantity').value = 1;
+                document.getElementById('partSelection').focus();
+            }
+        }
+
+        function addPartToOrder() {
+            const partId = parseInt(document.getElementById('partSelection').value);
+            const quantity = parseInt(document.getElementById('partQuantity').value);
+            const part = availableParts.find(p => p.id === partId);
+
+            if (!partId) {
+                alert('Wybierz część z listy');
+                return;
+            }
+
+            if (isNaN(quantity) || quantity < 1) {
+                alert('Podaj prawidłową ilość (minimum 1)');
+                return;
+            }
+
+            if (quantity > part.stockQuantity) {
+                alert(`Dostępna ilość: ${part.stockQuantity} szt.`);
+                return;
+            }
+
+            selectedParts.push({
+                id: partId,
+                name: part.name,
+                quantity: quantity,
+                unitPrice: part.unitPrice
+            });
+
+            document.getElementById('partsJson').value = JSON.stringify(selectedParts);
+            renderSelectedParts();
+            toggleAddPartForm();
+        }
+
+        function renderSelectedParts() {
+            const container = document.getElementById('partsContainer');
+            const countSpan = document.getElementById('selectedPartsCount');
+            const listContainer = document.getElementById('selectedParts');
+
+            if (selectedParts.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-info-circle fa-2x mb-2"></i>
+                        <p>Brak wybranych części</p>
+                    </div>`;
+                countSpan.textContent = '0';
+                listContainer.innerHTML = 'Brak wybranych części';
+                listContainer.className = 'small text-muted';
+                return;
+            }
+
+            let html = '<div class="list-group list-group-flush">';
+            let totalCost = 0;
+
+            selectedParts.forEach((part, index) => {
+                const partTotal = part.quantity * part.unitPrice;
+                totalCost += partTotal;
+
+                html += `
+                    <div class="list-group-item part-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${part.name}</strong>
+                                <div class="small text-muted">
+                                    ${part.quantity} × ${part.unitPrice} zł = ${partTotal.toFixed(2)} zł
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger" onclick="removePart(${index})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>`;
+            });
+
+            html += `</div><div class="mt-2 text-end fw-bold">Suma: ${totalCost.toFixed(2)} zł</div>`;
+            container.innerHTML = html;
+
+            countSpan.textContent = selectedParts.length;
+            listContainer.innerHTML = selectedParts.map(p => `${p.name} (${p.quantity} szt.)`).join('<br>');
+            listContainer.className = 'small text-success';
+        }
+
+        function removePart(index) {
+            selectedParts.splice(index, 1);
+            document.getElementById('partsJson').value = JSON.stringify(selectedParts);
+            renderSelectedParts();
+        }
+
+        // Pomocnicze funkcje
+        function showError(containerId, message) {
+            document.getElementById(containerId).innerHTML = `
+                <div class="text-center text-danger">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <p>${message}</p>
+                </div>`;
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} alert-dismissible fade show`;
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }, 10);
+        }
+
+        document.getElementById('orderForm').addEventListener('submit', function(e) {
+            if (!document.querySelector('select[name="VehicleId"]').value) {
+                e.preventDefault();
+                alert('Wybierz pojazd dla zlecenia');
+                return false;
+            }
+            document.getElementById('taskIdsCsv').value = selectedTaskIds.join(',') || '';
+            document.getElementById('newTasksJson').value = JSON.stringify(window.newTasks || []);
+            document.getElementById('partsJson').value = JSON.stringify(selectedParts || []);
+
+            console.log('Submitting form with:');
+            console.log('- taskIdsCsv:', document.getElementById('taskIdsCsv').value);
+            console.log('- newTasksJson:', document.getElementById('newTasksJson').value);
+            console.log('- partsJson:', document.getElementById('partsJson').value);
+
+            return true;
+        });
+    </script>
+}

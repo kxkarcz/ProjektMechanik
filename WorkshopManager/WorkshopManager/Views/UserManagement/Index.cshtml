@@ -1,0 +1,134 @@
+﻿@model IEnumerable<WorkshopManager.ViewModels.UserListViewModel>
+@{
+    ViewData["Title"] = "Zarządzanie użytkownikami";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-users"></i> @ViewData["Title"]</h2>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-user-plus"></i> Dodaj nowego użytkownika
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Lista użytkowników systemu</h5>
+    </div>
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th><i class="fas fa-envelope"></i> Email</th>
+                            <th><i class="fas fa-user-tag"></i> Role</th>
+                            <th><i class="fas fa-check-circle"></i> Status</th>
+                            <th class="text-center"><i class="fas fa-cogs"></i> Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user me-2"></i>
+                                        <div>
+                                            <strong>@user.Email</strong>
+                                            <br>
+                                            <small class="text-muted">@user.UserName</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (user.Roles.Any())
+                                    {
+                                        @foreach (var role in user.Roles)
+                                        {
+                                            <span class="badge bg-@(role == "Admin" ? "danger" : role == "Mechanik" ? "warning" : "info") me-1">
+                                                @role
+                                            </span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Brak roli</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (user.EmailConfirmed)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Aktywny
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-exclamation-triangle"></i> Niepotwierdzony
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
+                                        <a asp-action="Edit" asp-route-id="@user.Id"
+                                           class="btn btn-sm btn-outline-primary" title="Edytuj użytkownika">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a asp-action="ChangePassword" asp-route-id="@user.Id"
+                                           class="btn btn-sm btn-outline-warning" title="Zmień hasło">
+                                            <i class="fas fa-key"></i>
+                                        </a>
+                                        @if (!user.Roles.Contains("Admin") || Model.Count(u => u.Roles.Contains("Admin")) > 1)
+                                        {
+                                            <form asp-action="Delete" asp-route-id="@user.Id" method="post" class="d-inline"
+                                                  onsubmit="return confirm('Czy na pewno chcesz usunąć użytkownika @user.Email?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Usuń użytkownika">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5>Brak użytkowników w systemie</h5>
+                <p class="text-muted">Dodaj pierwszego użytkownika korzystając z przycisku powyżej.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        setTimeout(function() {
+            $('.alert').alert('close');
+        }, 5000);
+    </script>
+}

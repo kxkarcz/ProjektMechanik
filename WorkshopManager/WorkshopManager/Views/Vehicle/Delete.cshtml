@@ -1,0 +1,32 @@
+﻿@model WorkshopManager.Models.Vehicle
+
+@{
+    ViewData["Title"] = "Usuń pojazd";
+}
+
+<h1>Usuń pojazd</h1>
+
+<h3>Czy na pewno chcesz usunąć ten pojazd?</h3>
+<div>
+    <h4>Pojazd</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">Id</dt>
+        <dd class="col-sm-9">@Model.Id</dd>
+
+        <dt class="col-sm-3">VIN</dt>
+        <dd class="col-sm-9">@Model.VIN</dd>
+
+        <dt class="col-sm-3">Numer rejestracyjny</dt>
+        <dd class="col-sm-9">@Model.RegistrationNumber</dd>
+
+        <dt class="col-sm-3">Klient</dt>
+        <dd class="col-sm-9">@(Model.Customer?.FirstName ?? "Brak")</dd>
+    </dl>
+</div>
+
+<form asp-action="Delete">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Usuń</button>
+    <a asp-action="Index" class="btn btn-secondary">Anuluj</a>
+</form>

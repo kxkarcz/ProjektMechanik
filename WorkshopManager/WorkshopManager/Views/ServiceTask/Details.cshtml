@@ -1,0 +1,27 @@
+﻿@model WorkshopManager.Models.ServiceTask
+
+@{
+    ViewData["Title"] = "Szczegóły zadania";
+}
+
+<h1>Szczegóły zadania serwisowego</h1>
+
+<div>
+    <h4>Zadanie serwisowe</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">Opis</dt>
+        <dd class="col-sm-9">@Model.Description</dd>
+
+        <dt class="col-sm-3">Koszt robocizny</dt>
+        <dd class="col-sm-9">@Model.LaborCost.ToString("C")</dd>
+
+        <dt class="col-sm-3">ID zlecenia serwisowego</dt>
+        <dd class="col-sm-9">@Model.ServiceOrderId</dd>
+    </dl>
+</div>
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.Id">Edytuj</a> |
+    <a asp-action="Index">Wróć do listy</a>
+</div>

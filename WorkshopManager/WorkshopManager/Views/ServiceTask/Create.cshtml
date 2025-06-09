@@ -1,0 +1,277 @@
+﻿@model WorkshopManager.Models.ServiceTask
+@{
+    ViewData["Title"] = "Dodaj zadanie";
+}
+
+<h1>Dodaj zadanie serwisowe</h1>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (ViewBag.NoOrders == true)
+{
+    <div class="alert alert-warning">
+        <h4>Brak zleceń serwisowych</h4>
+        <p>Aby dodać zadanie, najpierw musisz utworzyć zlecenie serwisowe.</p>
+        <a href="/ServiceOrder/Create" class="btn btn-primary">Utwórz zlecenie</a>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            <h4>Nowe zadanie serwisowe</h4>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create" method="post" id="taskForm">
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label">Opis zadania *</label>
+                    <input asp-for="Description" class="form-control" placeholder="np. Wymiana oleju silnikowego" required />
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="LaborCost" class="form-label">Koszt robocizny *</label>
+                    <div class="input-group">
+                        <input asp-for="LaborCost" class="form-control" type="number" step="0.01" min="0.01" placeholder="0.00" required />
+                        <span class="input-group-text">zł</span>
+                    </div>
+                    <span asp-validation-for="LaborCost" class="text-danger"></span>
+                    <div class="form-text">Podaj koszt w złotówkach (np. 150.50)</div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="ServiceOrderId" class="form-label">Zlecenie serwisowe *</label>
+                    <select asp-for="ServiceOrderId" class="form-select" asp-items="ViewBag.ServiceOrders">
+                        <option value="">-- Wybierz zlecenie --</option>
+                    </select>
+                    <span asp-validation-for="ServiceOrderId" class="text-danger"></span>
+                    <div class="form-text">Wybierz zlecenie, do którego zostanie przypisane to zadanie</div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Zapisz zadanie
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Anuluj
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('taskForm');
+        if (!form) return;
+
+        form.addEventListener('submit', function(e) {
+            console.log('=== TASK FORM SUBMIT DEBUG ===');
+
+            const formData = new FormData(this);
+            const description = formData.get('Description');
+            const laborCost = formData.get('LaborCost');
+            const serviceOrderId = formData.get('ServiceOrderId');
+
+            console.log('Description:', description);
+            console.log('LaborCost:', laborCost);
+            console.log('ServiceOrderId:', serviceOrderId);
+
+            let hasErrors = false;
+
+            if (!description || description.trim().length === 0) {
+                console.error('Description is empty');
+                showFieldError('Description', 'Opis zadania jest wymagany');
+                hasErrors = true;
+            } else if (description.trim().length < 3) {
+                console.error('Description too short');
+                showFieldError('Description', 'Opis musi mieć co najmniej 3 znaki');
+                hasErrors = true;
+            }
+
+            if (!laborCost || parseFloat(laborCost) <= 0) {
+                console.error('Invalid labor cost');
+                showFieldError('LaborCost', 'Koszt robocizny musi być większy od 0');
+                hasErrors = true;
+            }
+
+            if (!serviceOrderId || parseInt(serviceOrderId) <= 0) {
+                console.error('Invalid service order ID');
+                showFieldError('ServiceOrderId', 'Musisz wybrać zlecenie serwisowe');
+                hasErrors = true;
+            }
+
+            if (hasErrors) {
+                e.preventDefault();
+                showAlert('Sprawdź poprawność wypełnionych danych', 'error');
+                return false;
+            }
+
+            console.log('Form validation passed, submitting...');
+            showAlert('Zapisywanie zadania...', 'info');
+
+            return true;
+        });
+
+        const descriptionField = document.querySelector('input[name="Description"]');
+        const laborCostField = document.querySelector('input[name="LaborCost"]');
+        const serviceOrderField = document.querySelector('select[name="ServiceOrderId"]');
+
+        if (descriptionField) {
+            descriptionField.addEventListener('blur', function() {
+                const value = this.value.trim();
+                if (value.length > 0 && value.length < 3) {
+                    showFieldError('Description', 'Opis musi mieć co najmniej 3 znaki');
+                } else {
+                    clearFieldError('Description');
+                }
+            });
+        }
+
+        if (laborCostField) {
+            laborCostField.addEventListener('blur', function() {
+                const value = parseFloat(this.value);
+                if (this.value && (isNaN(value) || value <= 0)) {
+                    showFieldError('LaborCost', 'Koszt musi być liczbą większą od 0');
+                } else {
+                    clearFieldError('LaborCost');
+                }
+            });
+        }
+
+        if (serviceOrderField) {
+            serviceOrderField.addEventListener('change', function() {
+                if (this.value) {
+                    clearFieldError('ServiceOrderId');
+                }
+            });
+        }
+    });
+
+    function showFieldError(fieldName, message) {
+        const field = document.querySelector(`[name="${fieldName}"]`);
+        if (!field) return;
+
+        clearFieldError(fieldName);
+
+        field.classList.add('is-invalid');
+
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'invalid-feedback';
+        errorDiv.textContent = message;
+        errorDiv.setAttribute('data-field-error', fieldName);
+
+        field.parentNode.appendChild(errorDiv);
+    }
+
+    function clearFieldError(fieldName) {
+        const field = document.querySelector(`[name="${fieldName}"]`);
+        if (!field) return;
+
+        field.classList.remove('is-invalid');
+
+        const existingError = document.querySelector(`[data-field-error="${fieldName}"]`);
+        if (existingError) {
+            existingError.remove();
+        }
+    }
+
+    function showAlert(message, type = 'info') {
+        const existingAlerts = document.querySelectorAll('.alert-temporary');
+        existingAlerts.forEach(alert => alert.remove());
+
+        const alertClass = type === 'error' ? 'alert-danger' :
+                         type === 'success' ? 'alert-success' :
+                         'alert-info';
+
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert ${alertClass} alert-dismissible fade show alert-temporary`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+
+        const form = document.getElementById('taskForm');
+        if (form) {
+            form.parentNode.insertBefore(alertDiv, form);
+        }
+
+        if (type !== 'error') {
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+    }
+
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            if (alert.classList.contains('alert-success') || alert.classList.contains('alert-info')) {
+                alert.style.transition = 'opacity 0.5s';
+                alert.style.opacity = '0';
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 500);
+            }
+        });
+    }, 5000);
+</script>
+
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    .is-invalid {
+        border-color: #dc3545;
+    }
+
+    .invalid-feedback {
+        display: block;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875em;
+        color: #dc3545;
+    }
+
+    .btn {
+        transition: all 0.15s ease-in-out;
+    }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+</style>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

@@ -1,0 +1,29 @@
+﻿@model WorkshopManager.Models.ServiceTask
+
+@{
+    ViewData["Title"] = "Usuń zadanie";
+}
+
+<h1>Usuń zadanie serwisowe</h1>
+
+<h3>Czy na pewno chcesz usunąć to zadanie?</h3>
+<div>
+    <h4>Zadanie serwisowe</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">Opis</dt>
+        <dd class="col-sm-9">@Model.Description</dd>
+
+        <dt class="col-sm-3">Koszt robocizny</dt>
+        <dd class="col-sm-9">@Model.LaborCost.ToString("C")</dd>
+
+        <dt class="col-sm-3">ID zlecenia serwisowego</dt>
+        <dd class="col-sm-9">@Model.ServiceOrderId</dd>
+    </dl>
+</div>
+
+<form asp-action="Delete">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Usuń</button> |
+    <a asp-action="Index">Anuluj</a>
+</form>

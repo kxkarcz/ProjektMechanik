@@ -1,0 +1,181 @@
+﻿@model WorkshopManager.Models.Part
+@{
+    ViewData["Title"] = "Dodaj nową część";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4>Informacje o części</h4>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label">Nazwa części *</label>
+                        <input asp-for="Name" class="form-control" placeholder="np. Filtr oleju, Klocki hamulcowe..." />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                        <div class="form-text">Wprowadź unikalną nazwę części</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="UnitPrice" class="form-label">Cena jednostkowa *</label>
+                                <div class="input-group">
+                                    <input asp-for="UnitPrice" class="form-control" type="number" step="0.01" min="0" placeholder="0.00" />
+                                    <span class="input-group-text">zł</span>
+                                </div>
+                                <span asp-validation-for="UnitPrice" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="StockQuantity" class="form-label">Ilość w magazynie *</label>
+                                <div class="input-group">
+                                    <input asp-for="StockQuantity" class="form-control" type="number" min="0" value="0" />
+                                    <span class="input-group-text">szt.</span>
+                                </div>
+                                <span asp-validation-for="StockQuantity" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label">Opis (opcjonalnie)</label>
+                        <textarea asp-for="Description" class="form-control" rows="3" 
+                                  placeholder="Dodatkowe informacje o części, zastosowanie, specyfikacja..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                        <div class="form-text">Maksymalnie 500 znaków</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Dodaj część do magazynu
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Anuluj
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h4>Podgląd</h4>
+            </div>
+            <div class="card-body">
+                <div id="partPreview">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-cog fa-3x mb-3"></i>
+                        <p>Podgląd części pojawi się tutaj podczas wypełniania formularza</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5>Wskazówki</h5>
+            </div>
+            <div class="card-body">
+                <div class="small text-muted">
+                    <p><strong>Nazwa części:</strong> Powinna być unikalna i opisowa. Przykłady: "Filtr oleju Toyota Corolla", "Klocki hamulcowe przednie"</p>
+                    <hr>
+                    <p><strong>Cena:</strong> Podaj cenę za jednostkę (sztukę) bez VAT</p>
+                    <hr>
+                    <p><strong>Stan magazynowy:</strong> Aktualna ilość dostępnych części w magazynie</p>
+                    <hr>
+                    <p><strong>Opis:</strong> Dodatkowe informacje pomocne przy identyfikacji części</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const nameInput = document.querySelector('input[name="Name"]');
+        const priceInput = document.querySelector('input[name="UnitPrice"]');
+        const stockInput = document.querySelector('input[name="StockQuantity"]');
+        const descriptionInput = document.querySelector('textarea[name="Description"]');
+        const previewContainer = document.getElementById('partPreview');
+
+        function updatePreview() {
+            const name = nameInput.value.trim() || 'Nazwa części';
+            const price = parseFloat(priceInput.value) || 0;
+            const stock = parseInt(stockInput.value) || 0;
+            const description = descriptionInput.value.trim();
+
+            const stockBadge = stock > 10 ? 'bg-success' : stock > 0 ? 'bg-warning' : 'bg-danger';
+            const totalValue = (price * stock).toFixed(2);
+
+            previewContainer.innerHTML = `
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">${name}</h6>
+                        <span class="badge ${stockBadge}">${stock} szt.</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text mb-2">
+                            <strong>Cena:</strong> <span class="text-success">${price.toFixed(2)} zł</span>
+                        </p>
+                        ${description ? `<p class="card-text text-muted small mb-2">${description}</p>` : ''}
+                        <p class="card-text mb-0">
+                            <strong>Wartość w magazynie:</strong> <span class="text-info">${totalValue} zł</span>
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        [nameInput, priceInput, stockInput, descriptionInput].forEach(input => {
+            if (input) {
+                input.addEventListener('input', updatePreview);
+            }
+        });
+
+        updatePreview();
+
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const name = nameInput.value.trim();
+            const price = parseFloat(priceInput.value);
+            const stock = parseInt(stockInput.value);
+
+            if (!name || name.length < 3) {
+                e.preventDefault();
+                alert('Nazwa części musi mieć co najmniej 3 znaki');
+                nameInput.focus();
+                return false;
+            }
+
+            if (!price || price <= 0) {
+                e.preventDefault();
+                alert('Cena musi być większa od 0');
+                priceInput.focus();
+                return false;
+            }
+
+            if (stock < 0) {
+                e.preventDefault();
+                alert('Stan magazynowy nie może być ujemny');
+                stockInput.focus();
+                return false;
+            }
+
+            return true;
+        });
+    });
+</script>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

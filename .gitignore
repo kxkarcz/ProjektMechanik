@@ -1,0 +1,10 @@
+/WorkshopManager/.idea
+/WorkshopManager/.vs
+/WorkshopManager/obj
+/WorkshopManager/PerformanceTests/bin
+/WorkshopManager/PerformanceTests/obj
+/WorkshopManager/Tests/bin
+/WorkshopManager/Tests/obj
+/WorkshopManager/WorkshopManager/bin
+/WorkshopManager/WorkshopManager/obj
+/WorkshopManager/WorkshopManager/wwwroot/uploads/vehicles

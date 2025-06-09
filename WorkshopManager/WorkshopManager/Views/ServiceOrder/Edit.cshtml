@@ -1,0 +1,698 @@
+﻿@model WorkshopManager.DTOs.ServiceOrderUpdateDto
+@{
+    ViewData["Title"] = "Edytuj zlecenie";
+    var id = (int)ViewBag.Id;
+}
+
+<h2>@ViewData["Title"] #@id</h2>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h4>Edycja zlecenia</h4>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post" id="editOrderForm">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Status" class="form-label">Status</label>
+                        <select asp-for="Status" class="form-select">
+                            <option value="New">Nowe</option>
+                            <option value="Open">Otwarte</option>
+                            <option value="InProgress">W trakcie</option>
+                            <option value="Completed">Zakończone</option>
+                            <option value="Cancelled">Anulowane</option>
+                        </select>
+                        <span asp-validation-for="Status" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="VehicleId" class="form-label">Pojazd</label>
+                        <select asp-for="VehicleId" class="form-select" asp-items="ViewBag.Vehicles">
+                            <option value="">-- Wybierz pojazd --</option>
+                        </select>
+                        <span asp-validation-for="VehicleId" class="text-danger"></span>
+                    </div>
+
+                    @if (ViewBag.CanChangeAssignment == true)
+                    {
+                        <div class="mb-3">
+                            <label asp-for="AssignedMechanicId" class="form-label">Mechanik</label>
+                            <select asp-for="AssignedMechanicId" class="form-select" asp-items="ViewBag.Mechanics">
+                                <option value="">-- Nieprzypisany --</option>
+                            </select>
+                            <span asp-validation-for="AssignedMechanicId" class="text-danger"></span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Mechanik</label>
+                            <input type="text" class="form-control" value="@ViewBag.CurrentMechanicName" readonly />
+                            <div class="form-text">Nie możesz zmienić przypisania mechanika</div>
+                        </div>
+                    }
+
+                    <input type="hidden" name="taskIdsCsv" id="taskIdsCsv" />
+                    <input type="hidden" name="newTasksJson" id="newTasksJson" />
+                    <input type="hidden" name="tasksToRemove" id="tasksToRemove" />
+                    <input type="hidden" name="partsJson" id="partsJson" />
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Zapisz zmiany
+                        </button>
+                        <a asp-action="Details" asp-route-id="@id" class="btn btn-secondary">
+                            <i class="fas fa-eye"></i> Szczegóły
+                        </a>
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="fas fa-list"></i> Lista zleceń
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Zadania zlecenia</h4>
+                <button class="btn btn-primary btn-sm" onclick="toggleAddTaskForm()">
+                    <i class="fas fa-plus"></i> Dodaj zadanie
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="addTaskForm" style="display: none;" class="mb-3 p-3 border rounded bg-light">
+                    <h6>Nowe zadanie</h6>
+                    <div class="mb-2">
+                        <label class="form-label">Opis zadania *</label>
+                        <input type="text" id="newTaskDescription" class="form-control form-control-sm" placeholder="np. Wymiana oleju" required />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Koszt robocizny *</label>
+                        <div class="input-group input-group-sm">
+                            <input type="number" id="newTaskCost" class="form-control" step="0.01" min="0" placeholder="0.00" required />
+                            <span class="input-group-text">zł</span>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-success btn-sm" onclick="addNewTask()">
+                            <i class="fas fa-plus"></i> Dodaj
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleAddTaskForm()">
+                            Anuluj
+                        </button>
+                    </div>
+                </div>
+
+                <div id="currentTasksSection" class="mb-3">
+                    <h6 class="text-primary">Zadania tego zlecenia</h6>
+                    <div id="currentTasksContainer">
+                        <div class="text-muted text-center">
+                            <i class="fas fa-spinner fa-spin"></i> Ładowanie...
+                        </div>
+                    </div>
+                </div>
+
+                <div id="availableTasksSection">
+                    <h6 class="text-success">Dostępne zadania</h6>
+                    <div id="availableTasksContainer">
+                        <div class="text-muted text-center">
+                            <i class="fas fa-spinner fa-spin"></i> Ładowanie...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <h6>Wybrane do dodania: <span id="selectedCount">0</span></h6>
+                    <div id="selectedTasks" class="small text-muted">
+                        Brak wybranych zadań
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Części</h4>
+                <button class="btn btn-primary btn-sm" onclick="toggleAddPartForm()">
+                    <i class="fas fa-plus"></i> Dodaj część
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="addPartForm" style="display: none;" class="mb-3 p-3 border rounded bg-light">
+                    <h6>Nowa część</h6>
+                    <div class="mb-2">
+                        <label class="form-label">Część *</label>
+                        <select id="partSelection" class="form-select form-select-sm" required>
+                            <option value="">-- Wybierz część --</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Ilość *</label>
+                        <input type="number" id="partQuantity" class="form-control form-control-sm" min="1" value="1" required />
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-success btn-sm" onclick="addPartToOrder()">
+                            <i class="fas fa-plus"></i> Dodaj
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleAddPartForm()">
+                            Anuluj
+                        </button>
+                    </div>
+                </div>
+
+                <div id="partsContainer">
+                    <div class="text-muted text-center">
+                        <i class="fas fa-cogs fa-2x mb-2"></i>
+                        <p>Ładowanie części...</p>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <h6>Wybrane części: <span id="selectedPartsCount">0</span></h6>
+                    <div id="selectedParts" class="small text-muted">
+                        Brak wybranych części
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentTasks = [];
+    let availableTasks = [];
+    let selectedTaskIds = [];
+    let tasksToRemove = [];
+    let taskIdCounter = 10000;
+    const currentOrderId = @id;
+
+    // Zarządzanie częściami
+    let availableParts = [];
+    let selectedParts = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAllTasks();
+        loadAvailableParts();
+        loadCurrentParts();
+    });
+
+    function loadAllTasks() {
+        fetch('/ServiceTask/GetTasksForEdit?orderId=' + currentOrderId)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Loaded tasks for edit:', data);
+
+                currentTasks = data.currentTasks || [];
+                availableTasks = data.availableTasks || [];
+
+                renderCurrentTasks();
+                renderAvailableTasks();
+            })
+            .catch(error => {
+                console.error('Error loading tasks:', error);
+                showError('Nie można załadować zadań: ' + error.message);
+            });
+    }
+
+    function renderCurrentTasks() {
+        const container = document.getElementById('currentTasksContainer');
+
+        if (currentTasks.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="fas fa-info-circle"></i>
+                    <p class="small mb-0">Brak zadań przypisanych do tego zlecenia</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="list-group list-group-flush">';
+
+        currentTasks.forEach(task => {
+            const isMarkedForRemoval = tasksToRemove.includes(task.id);
+            html += `
+                <div class="list-group-item p-2 ${isMarkedForRemoval ? 'list-group-item-danger' : 'list-group-item-info'}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="fw-bold ${isMarkedForRemoval ? 'text-decoration-line-through' : ''}">${task.description}</div>
+                            <small class="text-muted">Koszt: ${task.laborCost} zł</small>
+                        </div>
+                        <button type="button" class="btn btn-sm ${isMarkedForRemoval ? 'btn-success' : 'btn-outline-danger'}"
+                                onclick="toggleTaskRemoval(${task.id})"
+                                title="${isMarkedForRemoval ? 'Anuluj usunięcie' : 'Usuń z zlecenia'}">
+                            <i class="fas ${isMarkedForRemoval ? 'fa-undo' : 'fa-times'}"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function renderAvailableTasks() {
+        const container = document.getElementById('availableTasksContainer');
+
+        if (availableTasks.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="fas fa-info-circle"></i>
+                    <p class="small mb-0">Brak dostępnych zadań do dodania</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="list-group list-group-flush">';
+
+        availableTasks.forEach(task => {
+            const isSelected = selectedTaskIds.includes(task.id);
+            html += `
+                <div class="list-group-item p-2 ${isSelected ? 'list-group-item-primary' : ''}">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox"
+                               id="availableTask${task.id}"
+                               ${isSelected ? 'checked' : ''}
+                               onchange="toggleTaskSelection(${task.id})">
+                        <label class="form-check-label w-100" for="availableTask${task.id}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">${task.description}</div>
+                                    <small class="text-muted">Koszt: ${task.laborCost} zł</small>
+                                </div>
+                                <small class="text-success">Dostępne</small>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function toggleTaskRemoval(taskId) {
+        const index = tasksToRemove.indexOf(taskId);
+        if (index > -1) {
+            tasksToRemove.splice(index, 1);
+        } else {
+            tasksToRemove.push(taskId);
+        }
+
+        renderCurrentTasks();
+        updateFormData();
+    }
+
+    function toggleTaskSelection(taskId) {
+        const index = selectedTaskIds.indexOf(taskId);
+        if (index > -1) {
+            selectedTaskIds.splice(index, 1);
+        } else {
+            selectedTaskIds.push(taskId);
+        }
+
+        updateSelectedDisplay();
+        renderAvailableTasks();
+        updateFormData();
+    }
+
+    function updateSelectedDisplay() {
+        const count = selectedTaskIds.length;
+        document.getElementById('selectedCount').textContent = count;
+
+        const selectedContainer = document.getElementById('selectedTasks');
+        if (count === 0) {
+            selectedContainer.innerHTML = '<em>Brak wybranych zadań</em>';
+            selectedContainer.className = 'small text-muted';
+        } else {
+            const selectedTasks = availableTasks.filter(task => selectedTaskIds.includes(task.id));
+            const tasksList = selectedTasks.map(task => `• ${task.description} (${task.laborCost} zł)`).join('<br>');
+            selectedContainer.innerHTML = tasksList;
+            selectedContainer.className = 'small text-success';
+        }
+    }
+
+    function updateFormData() {
+        document.getElementById('taskIdsCsv').value = selectedTaskIds.join(',');
+        document.getElementById('tasksToRemove').value = tasksToRemove.join(',');
+    }
+
+    function toggleAddTaskForm() {
+        const form = document.getElementById('addTaskForm');
+        const isVisible = form.style.display !== 'none';
+        form.style.display = isVisible ? 'none' : 'block';
+
+        if (!isVisible) {
+            document.getElementById('newTaskDescription').focus();
+        } else {
+            document.getElementById('newTaskDescription').value = '';
+            document.getElementById('newTaskCost').value = '';
+        }
+    }
+
+    function addNewTask() {
+        const description = document.getElementById('newTaskDescription').value.trim();
+        const cost = parseFloat(document.getElementById('newTaskCost').value);
+
+        if (!description || description.length < 3) {
+            alert('Opis zadania musi mieć co najmniej 3 znaki');
+            return;
+        }
+
+        if (!cost || cost <= 0) {
+            alert('Koszt musi być większy od 0');
+            return;
+        }
+
+        const newTaskData = {
+            Description: description,
+            LaborCost: cost,
+            ServiceOrderId: currentOrderId
+        };
+
+        const newTask = {
+            id: taskIdCounter++,
+            description: description,
+            laborCost: cost.toFixed(2),
+            serviceOrderId: null,
+            isNew: true
+        };
+
+        availableTasks.unshift(newTask);
+        selectedTaskIds.push(newTask.id);
+
+        if (!window.newTasks) {
+            window.newTasks = [];
+        }
+        window.newTasks.push(newTaskData);
+
+        document.getElementById('newTaskDescription').value = '';
+        document.getElementById('newTaskCost').value = '';
+        toggleAddTaskForm();
+
+        renderAvailableTasks();
+        updateSelectedDisplay();
+        updateFormData();
+
+        showTemporaryMessage('Nowe zadanie zostało dodane', 'success');
+    }
+
+    // Funkcje dla części
+    function loadAvailableParts() {
+        fetch('/Part/GetAvailableParts')
+            .then(response => response.json())
+            .then(data => {
+                availableParts = data;
+                renderPartsSelect();
+            })
+            .catch(error => {
+                console.error('Error loading parts:', error);
+                showError('partsContainer', 'Nie można załadować części');
+            });
+    }
+
+    function loadCurrentParts() {
+        fetch('/UsedPart/GetUsedPartsForOrder?orderId=' + currentOrderId)
+            .then(response => response.json())
+            .then(data => {
+                // Tutaj mamy już używane części - ale nie dodajemy ich do selectedParts
+                // bo to są już istniejące, nie nowe
+                renderCurrentUsedParts(data);
+            })
+            .catch(error => {
+                console.error('Error loading current parts:', error);
+                showError('partsContainer', 'Nie można załadować aktualnych części');
+            });
+    }
+
+    function renderCurrentUsedParts(usedParts) {
+        const container = document.getElementById('partsContainer');
+
+        if (usedParts.length === 0 && selectedParts.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                    <p>Brak części w zleceniu</p>
+                </div>`;
+            return;
+        }
+
+        let html = '';
+        let totalCost = 0;
+
+        // Najpierw pokaż istniejące części
+        if (usedParts.length > 0) {
+            html += '<h6 class="text-success mb-2">Części w zleceniu:</h6>';
+            usedParts.forEach(usedPart => {
+                const partTotal = usedPart.quantity * usedPart.part.unitPrice;
+                totalCost += partTotal;
+
+                html += `
+                    <div class="list-group-item part-item bg-success bg-opacity-10">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${usedPart.part.name}</strong>
+                                <div class="small text-muted">
+                                    ${usedPart.quantity} × ${usedPart.part.unitPrice} zł = ${partTotal.toFixed(2)} zł
+                                </div>
+                                <small class="badge bg-success">Już w zleceniu</small>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        // Potem pokaż nowe części do dodania
+        if (selectedParts.length > 0) {
+            html += '<h6 class="text-primary mb-2 mt-3">Nowe części do dodania:</h6>';
+            selectedParts.forEach((part, index) => {
+                const partTotal = part.quantity * part.unitPrice;
+                totalCost += partTotal;
+
+                html += `
+                    <div class="list-group-item part-item bg-primary bg-opacity-10">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${part.name}</strong>
+                                <div class="small text-muted">
+                                    ${part.quantity} × ${part.unitPrice} zł = ${partTotal.toFixed(2)} zł
+                                </div>
+                                <small class="badge bg-primary">Do dodania</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger" onclick="removePart(${index})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        if (totalCost > 0) {
+            html += `<div class="mt-2 text-end fw-bold">Łączny koszt: ${totalCost.toFixed(2)} zł</div>`;
+        }
+
+        container.innerHTML = html;
+    }
+
+    function renderPartsSelect() {
+        const select = document.getElementById('partSelection');
+        select.innerHTML = '<option value="">-- Wybierz część --</option>';
+
+        availableParts.forEach(part => {
+            const option = document.createElement('option');
+            option.value = part.id;
+            option.textContent = `${part.name} (${part.stockQuantity} szt. - ${part.unitPrice} zł)`;
+            option.dataset.stock = part.stockQuantity;
+            select.add(option);
+        });
+    }
+
+    function toggleAddPartForm() {
+        const form = document.getElementById('addPartForm');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        if (form.style.display !== 'none') {
+            document.getElementById('partQuantity').value = 1;
+            document.getElementById('partSelection').focus();
+        }
+    }
+
+    function addPartToOrder() {
+        const partId = parseInt(document.getElementById('partSelection').value);
+        const quantity = parseInt(document.getElementById('partQuantity').value);
+        const part = availableParts.find(p => p.id === partId);
+
+        if (!partId) {
+            alert('Wybierz część z listy');
+            return;
+        }
+
+        if (isNaN(quantity) || quantity < 1) {
+            alert('Podaj prawidłową ilość (minimum 1)');
+            return;
+        }
+
+        if (quantity > part.stockQuantity) {
+            alert(`Dostępna ilość: ${part.stockQuantity} szt.`);
+            return;
+        }
+
+        selectedParts.push({
+            id: partId,
+            name: part.name,
+            quantity: quantity,
+            unitPrice: part.unitPrice
+        });
+
+        document.getElementById('partsJson').value = JSON.stringify(selectedParts);
+        loadCurrentParts(); // Przeładuj aby pokazać i istniejące i nowe części
+        toggleAddPartForm();
+    }
+
+    function renderSelectedParts() {
+        // Ta funkcja jest już niepotrzebna, bo używamy renderCurrentUsedParts
+        // Zostawiamy pustą żeby nie było błędów
+    }
+
+    function removePart(index) {
+        selectedParts.splice(index, 1);
+        document.getElementById('partsJson').value = JSON.stringify(selectedParts);
+        loadCurrentParts(); // Przeładuj aby pokazać aktualny stan
+    }
+
+    function showTemporaryMessage(message, type = 'info') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+
+        const form = document.getElementById('editOrderForm');
+        form.parentNode.insertBefore(alertDiv, form);
+
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 3000);
+    }
+
+    function showError(message) {
+        document.getElementById('currentTasksContainer').innerHTML = `
+            <div class="text-center text-danger">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p class="small">${message}</p>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadAllTasks()">
+                    <i class="fas fa-redo"></i> Spróbuj ponownie
+                </button>
+            </div>
+        `;
+
+        document.getElementById('availableTasksContainer').innerHTML = `
+            <div class="text-center text-danger">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p class="small">${message}</p>
+            </div>
+        `;
+    }
+
+    document.getElementById('editOrderForm').addEventListener('submit', function(e) {
+        if (window.newTasks && window.newTasks.length > 0) {
+            document.getElementById('newTasksJson').value = JSON.stringify(window.newTasks);
+        } else {
+            document.getElementById('newTasksJson').value = '[]';
+        }
+
+        document.getElementById('taskIdsCsv').value = selectedTaskIds.length > 0 ? selectedTaskIds.join(',') : '';
+        document.getElementById('tasksToRemove').value = tasksToRemove.length > 0 ? tasksToRemove.join(',') : '';
+        document.getElementById('partsJson').value = JSON.stringify(selectedParts || []);
+
+        console.log('Form submitting with:');
+        console.log('- taskIdsCsv:', document.getElementById('taskIdsCsv').value);
+        console.log('- newTasksJson:', document.getElementById('newTasksJson').value);
+        console.log('- tasksToRemove:', document.getElementById('tasksToRemove').value);
+        console.log('- partsJson:', document.getElementById('partsJson').value);
+
+        return true;
+    });
+</script>
+
+<style>
+    .list-group-item.list-group-item-primary {
+        background-color: #cce7ff;
+        border-color: #99d1ff;
+    }
+
+    .list-group-item.list-group-item-info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+    }
+
+    .list-group-item.list-group-item-danger {
+        background-color: #f8d7da;
+        border-color: #f1aeb5;
+    }
+
+    .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    #addTaskForm, #addPartForm {
+        border: 2px dashed #dee2e6;
+        transition: all 0.3s ease;
+    }
+
+        #addTaskForm:hover, #addPartForm:hover {
+            border-color: #0d6efd;
+            background-color: #f8f9fa !important;
+        }
+
+    .text-decoration-line-through {
+        text-decoration: line-through;
+    }
+
+    .part-item {
+        transition: all 0.2s ease;
+    }
+
+        .part-item:hover {
+            background-color: #f8f9fa;
+        }
+</style>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}
